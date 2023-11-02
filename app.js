@@ -28,6 +28,10 @@ app.use('/posts-api', postsRouter)
 const mapsRouter = require('./routes/maps-router')
 app.use('/maps-api', mapsRouter)
 
+app.use('/', async (req, res) => {
+    return res.status(200).json({"message": "HELLO FROM EXPRESS!!!"})
+})
+
 // INITIALIZE OUR DATABASE OBJECT
 const db = require('./db')
 db.on('error', console.error.bind(console, 'MongoDB connection error:'))
