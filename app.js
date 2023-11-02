@@ -28,7 +28,7 @@ app.use('/posts-api', postsRouter)
 const mapsRouter = require('./routes/maps-router')
 app.use('/maps-api', mapsRouter)
 
-app.use('/', async (req, res) => {
+app.get('/', async (req, res) => {
     return res.status(200).json({"message": "HELLO FROM EXPRESS!!!"})
 })
 
