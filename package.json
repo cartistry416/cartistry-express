@@ -5,7 +5,7 @@
     "license": "MIT",
     "type": "module",
     "scripts": {
-      "start": "node app.ts"
+      "start": "ts-node-esm app.ts"
     },
     "dependencies": {
         "@mapbox/togeojson": "^0.16.2",
