@@ -12,9 +12,9 @@ const app = express()
 // SETUP THE MIDDLEWARE
 app.use(express.urlencoded({ extended: true }))
 app.use(cors({
-    origin: ["http://localhost:3000"],
+    origin: ["https://main.d2cpsfn3mxqyu2.amplifyapp.com"],
     credentials: true
-}))
+})) //CartistryExpressServer-env-1.eba-fmapfype.us-east-1.elasticbeanstalk.com 
 app.use(express.json())
 app.use(cookieParser())
 
