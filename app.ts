@@ -44,7 +44,7 @@ app.use('/posts-api', postsRouter)
 app.use('/maps-api', mapsRouter)
 
 app.get('/', async (req, res) => {
-    return res.status(200).json({"message": "HELLO FROM EXPRESS!!!"})
+    res.send("HELLO FROM EXPRESS!")
 })
 
 // INITIALIZE OUR DATABASE OBJECT
