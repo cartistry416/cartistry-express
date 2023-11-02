@@ -1,7 +1,8 @@
-const jwt = require("jsonwebtoken")
 
-function authManager() {
-    verify = (req, res, next) => {
+import jwt from 'jsonwebtoken'
+//const jwt = require("jsonwebtoken")
+
+    const verify = (req, res, next) => {
         console.log("req: " + req);
         console.log("next: " + next);
         console.log("Who called verify?");
@@ -30,7 +31,7 @@ function authManager() {
         }
     }
 
-    verifyUser = (req) => {
+    const verifyUser = (req) => {
         try {
             const token = req.cookies.token;
             if (!token) {
@@ -44,14 +45,16 @@ function authManager() {
         }
     }
 
-    signToken = (userId) => {
+    const signToken = (userId) => {
         return jwt.sign({
             userId: userId
         }, process.env.JWT_SECRET);
     }
 
-    return this;
+const auth = {
+    verify,
+    verifyUser,
+    signToken
 }
-
-const auth = authManager();
-module.exports = auth;
+// module.exports = auth;
+export default auth

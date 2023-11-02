@@ -1,8 +1,12 @@
 {
     "name": "server",
     "version": "1.0.0",
-    "main": "index.js",
+    "main": "app.ts",
     "license": "MIT",
+    "type": "module",
+    "scripts": {
+      "start": "node app.ts"
+    },
     "dependencies": {
         "@mapbox/togeojson": "^0.16.2",
         "adm-zip": "^0.5.10",

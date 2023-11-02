@@ -1,6 +1,7 @@
 
-import mongoose, { Document, Model, Schema } from 'mongoose';
+import mongoose, { Document, Model } from 'mongoose';
 
+const Schema = mongoose.Schema
 const ObjectId = Schema.Types.ObjectId
 
 const UserSchema = new Schema<UserDocument>({
@@ -20,9 +21,9 @@ interface UserDocument extends Document {
     userName: string;
     email: string;
     passwordHash: string;
-    posts: Schema.Types.ObjectId[];
-    mapsMetdadata: Schema.Types.ObjectId[];
-    likedPosts: Schema.Types.ObjectId[];
+    posts: mongoose.Schema.Types.ObjectId[];
+    mapsMetdadata: mongoose.Schema.Types.ObjectId[];
+    likedPosts: mongoose.Schema.Types.ObjectId[];
     untitledCount: number;
     duplicateCount: number;
     isAdmin: boolean;

@@ -1,8 +1,8 @@
-import mongoose, { Document, Model, Schema, Types } from 'mongoose';
+import mongoose, { Document, Model, Types } from 'mongoose';
 import { UserDocument } from './user-model'; 
 import { MapDataDocument } from './mapData-model'; 
-// Define the MapMetadata schema
-const mapMetadataSchema = new Schema<MapMetadataDocument>({
+// Define the MapMetadata mongoose.Schema
+const mapMetadata = new mongoose.Schema<MapMetadataDocument>({
   title: { type: String, required: true },
   owner: { type: Types.ObjectId, ref: 'User', required: true },
   thumbnail: {
@@ -33,16 +33,16 @@ interface Image {
   contentType: string,
 }
 
-const MapMetadataModel: Model<MapMetadataDocument> = mongoose.model('MapMetadata', mapMetadataSchema);
+const MapMetadataModel: Model<MapMetadataDocument> = mongoose.model('MapMetadata', mapMetadata);
 
 export { MapMetadataModel, MapMetadataDocument };
 
 
 // const mongoose = require('mongoose')
-// const Schema = mongoose.Schema
-// const ObjectId = Schema.Types.ObjectId
+// const mongoose.Schema = mongoose.mongoose.Schema
+// const ObjectId = mongoose.Schema.Types.ObjectId
 
-// const mapMetadataSchema = new Schema(
+// const mapMetadatamongoose.Schema = new mongoose.Schema(
 //     {
 //         title: { type: String, required: true },
 //         owner: { type: ObjectId, ref:'User', required: true },
@@ -61,4 +61,4 @@ export { MapMetadataModel, MapMetadataDocument };
 //     { timestamps: true },
 // )
 
-// module.exports = mongoose.model('MapMetadata', mapMetadataSchema)
+// module.exports = mongoose.model('MapMetadata', mapMetadatamongoose.Schema)

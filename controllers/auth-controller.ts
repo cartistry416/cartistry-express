@@ -1,12 +1,13 @@
-const auth = require('../auth')
-import { UserModel, UserDocument } from '../models/user-model';
-import { Request, Response } from 'express';
+// const auth = require('../auth')
+import auth from '../auth/auth.ts'
+import { UserModel, UserDocument } from '../models/user-model.ts';
 
-const bcrypt = require('bcryptjs')
+import bcrypt from 'bcryptjs'
+// const bcrypt = require('bcryptjs')
 
 
 
-const getLoggedIn = async (req: Request, res: Response) => {
+const getLoggedIn = async (req, res) => {
     try {
         let userId = auth.verifyUser(req);
         if (!userId) {
@@ -40,7 +41,7 @@ const getLoggedIn = async (req: Request, res: Response) => {
     }
 }
 
-const loginUser = async (req: Request, res: Response) => {
+const loginUser = async (req, res) => {
     console.log("loginUser");
     try {
         const { email, password } = req.body;
@@ -94,7 +95,7 @@ const loginUser = async (req: Request, res: Response) => {
     }
 }
 
-const logoutUser = async (req: Request, res: Response) => {
+const logoutUser = async (req, res) => {
     res.cookie("token", "", {
         httpOnly: true,
         expires: new Date(0),
@@ -103,7 +104,7 @@ const logoutUser = async (req: Request, res: Response) => {
     }).send();
 }
 
-const registerUser = async (req: Request, res: Response) => {
+const registerUser = async (req, res) => {
     try {
         const { userName, firstName, lastName, email, password, passwordVerify } = req.body;
         console.log("create user: " + firstName + " " + lastName + " " + email + " " + password + " " + passwordVerify);
@@ -177,9 +178,10 @@ const registerUser = async (req: Request, res: Response) => {
     }
 }
 
-
+// export default AuthController
 const AuthController = {getLoggedIn, registerUser, loginUser, logoutUser}
-export {AuthController}
+// export {AuthController}
+export default AuthController
 
 // module.exports = {
 //     getLoggedIn,

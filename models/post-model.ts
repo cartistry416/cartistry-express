@@ -1,10 +1,10 @@
-import mongoose, { Document, Model, Schema} from 'mongoose';
+import mongoose, { Document, Model} from 'mongoose';
 import { UserDocument } from './user-model'; 
 
-const ObjectId = Schema.Types.ObjectId
+const ObjectId = mongoose.Schema.Types.ObjectId
 
 
-const postSchema = new Schema<PostDocument>({
+const postSchema = new mongoose.Schema<PostDocument>({
   title: { type: String, required: true },
   owner: { type: ObjectId, ref: 'User', required: true },
   ownerUserName: { type: String, required: true },
@@ -35,14 +35,14 @@ const postSchema = new Schema<PostDocument>({
 
 interface PostDocument extends Document {
   title: string;
-  owner: Schema.Types.ObjectId; 
+  owner: mongoose.Schema.Types.ObjectId; 
   ownerUserName: string;
   thumbnail: Image;
   comments: Comment[];
   images: Image[];
   likes: number;
   forks: number;
-  mapMetadata: Schema.Types.ObjectId;
+  mapMetadata: mongoose.Schema.Types.ObjectId;
   tags: string[];
   publishDate: Date;
 }

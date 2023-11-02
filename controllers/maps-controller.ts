@@ -1,12 +1,18 @@
-import { UserModel, UserDocument } from '../models/user-model'; // Import the User model and UserDocument
-import { PostModel, PostDocument } from '../models/post-model'; // Import the Post model and PostDocument
-import { MapMetadataModel, MapMetadataDocument } from '../models/mapMetadata-model'; // Import the MapMetadata model and MapMetadataDocument
+import { UserModel, UserDocument } from '../models/user-model.ts'; // Import the User model and UserDocument
+import { PostModel, PostDocument } from '../models/post-model.ts'; // Import the Post model and PostDocument
+import { MapMetadataModel, MapMetadataDocument } from '../models/mapMetadata-model.ts'; // Import the MapMetadata model and MapMetadataDocument
 import { Types } from 'mongoose';
 import * as shp from 'shpjs';
 import * as tj from '@mapbox/togeojson';
-const DOMParser = require('xmldom').DOMParser;
-const AdmZip = require('adm-zip');
-const gjv = require("geojson-validation");
+
+import * as xmldom from 'xmldom'
+
+
+const DOMParser = xmldom.DOMParser;
+import * as AdmZip from 'adm-zip'
+//const AdmZip = require('adm-zip');
+import * as gjv from 'geojson-validation'
+//const gjv = require("geojson-validation");
 
 
 const uploadMap = async (req, res) => {
