@@ -12,6 +12,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 // import postsRouter from './routes/posts-router'
 // import mapsRouter from './routes/maps-router'
 import express from 'express';
+import cors from 'cors';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import { authRouter } from './routes/auth-router.js';
@@ -27,10 +28,10 @@ const PORT = process.env.PORT || 4000;
 const app = express();
 // SETUP THE MIDDLEWARE
 app.use(express.urlencoded({ extended: true }));
-// app.use(cors({
-//     origin: ["https://main.d2cpsfn3mxqyu2.amplifyapp.com"],
-//     credentials: true
-// })) //CartistryExpressServer-env-1.eba-fmapfype.us-east-1.elasticbeanstalk.com 
+app.use(cors({
+    origin: ["https://main.d2cpsfn3mxqyu2.amplifyapp.com"],
+    credentials: true
+})); //CartistryExpressServer-env-1.eba-fmapfype.us-east-1.elasticbeanstalk.com 
 app.use(express.json());
 app.use(cookieParser());
 // SETUP OUR OWN ROUTERS AS MIDDLEWARE
