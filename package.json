@@ -5,9 +5,17 @@
     "license": "MIT",
     "type": "module",
     "scripts": {
-        "build": "tsc",
-        "start": "node dist/app.js"
+        "start": "node dist/app.js",
+        "build": "rimraf dist && tsc",
+        "ts.check": "tsc --project tsconfig.json",
+        "add-build": "git add dist",
+        "test": "echo \"Error: no test specified\" && exit 1"
     },
+    "pre-commit": [
+        "ts.check",
+        "build",
+        "add-build"
+    ],
     "dependencies": {
         "@mapbox/togeojson": "^0.16.2",
         "adm-zip": "^0.5.10",
