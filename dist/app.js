@@ -45,4 +45,7 @@ app.get('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 // const db = require('./db')
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 // PUT THE SERVER IN LISTENING MODE
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+if (!process.env.TESTING) {
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
+export { app };

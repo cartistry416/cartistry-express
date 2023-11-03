@@ -14,5 +14,7 @@
     // "allowImportingTsExtensions": true
     "allowJs": true,
     "checkJs": true,
-    }
+    },
+    "include": ["src/**/*", "__tests__/**/*"]
+    
 }
