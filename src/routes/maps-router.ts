@@ -7,10 +7,10 @@
 // const express = require('express')
 import express from 'express'
 
-import {MapsController} from '../controllers/maps-controller.ts'
+import {MapsController} from '../controllers/maps-controller.js'
 const mapsRouter = express.Router()
 // const auth = require('../auth/auth.ts')
-import auth from '../auth/auth.ts'
+import auth from '../auth/auth.js'
 
 
 mapsRouter.get('/maps/:id/export', MapsController.exportMap)
@@ -30,7 +30,7 @@ mapsRouter.put('/maps/:id/rename', auth.verify, MapsController.renameMap)
 
 mapsRouter.delete('/maps/:id', auth.verify, MapsController.deleteMap)
 
-export default mapsRouter
+export {mapsRouter}
 
 // module.exports = mapsRouter
 // const mapsmapsRouter = mapsRouter

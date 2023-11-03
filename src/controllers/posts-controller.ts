@@ -1,6 +1,6 @@
-import { UserModel, UserDocument } from '../models/user-model.ts'; // Import the User model and UserDocument
-import { PostModel, PostDocument } from '../models/post-model.ts'; // Import the Post model and PostDocument
-import { MapMetadataModel, MapMetadataDocument } from '../models/mapMetadata-model.ts'; // Import the MapMetadata model and MapMetadataDocument
+import { UserModel, UserDocument } from '../models/user-model.js'; // Import the User model and UserDocument
+import { PostModel, PostDocument } from '../models/post-model.js'; // Import the Post model and PostDocument
+import { MapMetadataModel, MapMetadataDocument } from '../models/mapMetadata-model.js'; // Import the MapMetadata model and MapMetadataDocument
 import { Types } from 'mongoose';
 
 async function findUserById(userId: string): Promise<UserDocument | null> {

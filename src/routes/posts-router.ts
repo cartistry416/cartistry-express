@@ -6,10 +6,10 @@
 */
 // const express = require('express')
 import express from 'express'
-import {PostsController} from '../controllers/posts-controller.ts'
+import {PostsController} from '../controllers/posts-controller.js'
 const postsRouter = express.Router()
 // const auth = require('../auth')
-import auth from '../auth/auth.ts'
+import auth from '../auth/auth.js'
 
 
 postsRouter.get('/posts/search-title/:title', PostsController.searchPostsByTitle)
@@ -30,7 +30,7 @@ postsRouter.put('/posts/:id/edit-comment', auth.verify, PostsController.editComm
 postsRouter.delete('/posts/:id', auth.verify, PostsController.deletePost)
 postsRouter.delete('/posts/:id/comment', auth.verify, PostsController.deleteComment)
 
-export default postsRouter
+export {postsRouter}
 // module.exports = postsRouter
 // const postspostsRouter = postsRouter
 // export {postspostsRouter}

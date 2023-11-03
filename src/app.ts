@@ -10,15 +10,15 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import cookieParser from 'cookie-parser'
 
-import authRouter from './routes/auth-router.ts'
+import {authRouter} from './routes/auth-router.js'
 //const authRouter = require('./routes/auth-router.ts')
 
-import postsRouter from './routes/posts-router.ts'
+import {postsRouter} from './routes/posts-router.js'
 
 //const postsRouter = require('./routes/posts-router.ts')
-import mapsRouter from './routes/maps-router.ts'
+import {mapsRouter} from './routes/maps-router.js'
 
-import db from './db/db.ts'
+import db from './db/db.js'
 
 //const mapsRouter = require('./routes/maps-router.ts')
 

@@ -1,6 +1,6 @@
 // const auth = require('../auth')
-import auth from '../auth/auth.ts'
-import { UserModel, UserDocument } from '../models/user-model.ts';
+import auth from '../auth/auth.js'
+import { UserModel, UserDocument } from '../models/user-model.js'
 
 import bcrypt from 'bcryptjs'
 // const bcrypt = require('bcryptjs')

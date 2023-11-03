@@ -1,8 +1,18 @@
 {
     "compilerOptions": {
+    "target": "ES6",
+    "baseUrl": "./src",
+    "paths": {
+      "*": ["*"]
+    },
+    "outDir": "./dist",     
+    "rootDir": "./src",    
     "esModuleInterop": true,
     "module": "ES6",
     "moduleResolution": "node",
-    "allowImportingTsExtensions": true,
+    "strictNullChecks": false,
+    // "allowImportingTsExtensions": true
+    "allowJs": true,
+    "checkJs": true,
     }
 }

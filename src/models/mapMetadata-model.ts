@@ -1,6 +1,6 @@
 import mongoose, { Document, Model, Types } from 'mongoose';
-import { UserDocument } from './user-model'; 
-import { MapDataDocument } from './mapData-model'; 
+import { UserDocument } from './user-model.js'; 
+import { MapDataDocument } from './mapData-model.js'; 
 // Define the MapMetadata mongoose.Schema
 const mapMetadata = new mongoose.Schema<MapMetadataDocument>({
   title: { type: String, required: true },
