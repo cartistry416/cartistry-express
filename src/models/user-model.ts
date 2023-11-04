@@ -14,7 +14,7 @@ const UserSchema = new Schema<UserDocument>({
     untitledCount: { type: Number, default: 0 },
     duplicateCount: { type: Number, default: 0 },
     isAdmin: { type: Boolean, default: false },
-    timeOfLastPasswordResetRequest: { type: Date },
+    timeOfLastPasswordResetRequest: { type: Date, required: false },
   }, { timestamps: true });
 
 interface UserDocument extends Document {

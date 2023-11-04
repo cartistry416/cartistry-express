@@ -20,7 +20,8 @@ import { authRouter } from './routes/auth-router.js';
 import { postsRouter } from './routes/posts-router.js';
 //const postsRouter = require('./routes/posts-router.ts')
 import { mapsRouter } from './routes/maps-router.js';
-import db from './db/db.js';
+import { connectDB } from './db/db.js';
+import mongoose from 'mongoose';
 //const mapsRouter = require('./routes/maps-router.ts')
 // CREATE OUR SERVER
 dotenv.config();
@@ -42,10 +43,13 @@ app.get('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.send("HELLO FROM EXPRESS!");
 }));
 // INITIALIZE OUR DATABASE OBJECT
-// const db = require('./db')
-db.on('error', console.error.bind(console, 'MongoDB connection error:'));
+// db.on('error', console.error.bind(console, 'MongoDB connection error:'))
 // PUT THE SERVER IN LISTENING MODE
-if (!process.env.TESTING) {
+if (process.env.NODE_ENV !== 'test') {
+    connectDB().then(() => {
+        const db = mongoose.connection;
+        db.on('error', console.error.bind(console, 'MongoDB connection error:'));
+    });
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 }
 export { app };

@@ -26,23 +26,24 @@ const getLoggedIn = async (req, res) => {
                 errorMessage: "???"
             })
         }
-        console.log("loggedInUser: " + loggedInUser);
+        // console.log("loggedInUser: " + loggedInUser);
 
         return res.status(200).json({ 
             loggedIn: true,
             user: {
                 userName: loggedInUser.userName,
-                email: loggedInUser.email
+                email: loggedInUser.email,
+                isAdmin: loggedInUser.isAdmin,
             }
         })
     } catch (err) {
-        console.log("err: " + err);
-        res.json(false);
+        // console.log("err: " + err);
+        return res.status(500).json(false);
     }
 }
 
 const loginUser = async (req, res) => {
-    console.log("loginUser");
+    // console.log("loginUser");
     try {
         const { email, password } = req.body;
 
@@ -53,7 +54,7 @@ const loginUser = async (req, res) => {
         }
 
         const existingUser = await UserModel.findOne({ email: email });
-        console.log("existingUser: " + existingUser);
+        // console.log("existingUser: " + existingUser);
         if (!existingUser) {
             return res
                 .status(401)
@@ -62,10 +63,10 @@ const loginUser = async (req, res) => {
                 })
         }
 
-        console.log("provided password: " + password);
+        // console.log("provided password: " + password);
         const passwordCorrect = await bcrypt.compare(password, existingUser.passwordHash);
         if (!passwordCorrect) {
-            console.log("Incorrect password");
+            // console.log("Incorrect password");
             return res
                 .status(401)
                 .json({
@@ -75,7 +76,7 @@ const loginUser = async (req, res) => {
 
         // LOGIN THE USER
         const token = auth.signToken(existingUser._id);
-        console.log(token);
+        // console.log(token);
 
         res.cookie("token", token, {
             httpOnly: true,
@@ -85,7 +86,8 @@ const loginUser = async (req, res) => {
             success: true,
             user: {
                 userName: existingUser.userName,
-                email: existingUser.email              
+                email: existingUser.email,
+                isAdmin: existingUser.isAdmin              
             }
         })
 
@@ -106,15 +108,15 @@ const logoutUser = async (req, res) => {
 
 const registerUser = async (req, res) => {
     try {
-        const { userName, firstName, lastName, email, password, passwordVerify } = req.body;
-        console.log("create user: " + firstName + " " + lastName + " " + email + " " + password + " " + passwordVerify);
+        const { userName, email, password, passwordVerify } = req.body;
+        //console.log("create user: " + userName + " " + email + " " + password + " " + passwordVerify);
         if (!userName || !email || !password || !passwordVerify) {
             return res
                 .status(400)
                 .json({ success: false,
                     errorMessage: "Please enter all required fields." });
         }
-        console.log("all fields provided");
+        //console.log("all fields provided");
         if (password.length < 8) {
             return res
                 .status(400)
@@ -123,7 +125,7 @@ const registerUser = async (req, res) => {
                     errorMessage: "Please enter a password of at least 8 characters."
                 });
         }
-        console.log("password long enough");
+        //console.log("password long enough");
         if (password !== passwordVerify) {
             return res
                 .status(400)
@@ -132,7 +134,7 @@ const registerUser = async (req, res) => {
                     errorMessage: "Please enter the same password twice."
                 })
         }
-        console.log("password and password verify match");
+        //console.log("password and password verify match");
         let existingUser = await UserModel.findOne({ email: email });
 
         if (existingUser) {
@@ -156,20 +158,21 @@ const registerUser = async (req, res) => {
         const saltRounds = 10;
         const salt = await bcrypt.genSalt(saltRounds);
         const passwordHash = await bcrypt.hash(password, salt);
-        console.log("passwordHash: " + passwordHash);
+        //console.log("passwordHash: " + passwordHash);
 
         const newUser = ({
             userName, email, passwordHash
         });
-        const savedUser = new UserModel({})
+        const savedUser = new UserModel(newUser);
         await savedUser.save()
-        console.log("new user saved: " + savedUser._id);
+        //console.log("new user saved: " + savedUser._id);
 
         return res.status(200).json({
             success: true,
             user: {
                 userName: savedUser.userName,
-                email: savedUser.email              
+                email: savedUser.email,
+                isAdmin: savedUser.isAdmin             
             }
         })
     } catch (err) {
