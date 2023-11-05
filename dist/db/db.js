@@ -18,7 +18,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 let mongod = null;
 const connectDB = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        let dbUrl = process.env.DB_CONNECT;
+        let dbUrl = process.env.MONGODB_URI;
         if (process.env.NODE_ENV === 'test') {
             mongod = yield MongoMemoryServer.create();
             dbUrl = mongod.getUri();
