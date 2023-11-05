@@ -1,5 +1,5 @@
-import mongoose, { Document, Model, Schema } from 'mongoose';
-
+import mongoose, { Document, Model } from 'mongoose';
+const Schema = mongoose.Schema
 // Define the MapData schema
 const mapDataSchema = new Schema<MapDataDocument>({
   geoJSONZipPath: { type: String, required: true },

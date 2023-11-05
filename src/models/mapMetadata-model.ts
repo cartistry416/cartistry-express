@@ -1,4 +1,4 @@
-import mongoose, { Document, Model, Types } from 'mongoose';
+import mongoose, { Document, Model } from 'mongoose';
 import { UserDocument } from './user-model.js'; 
 import { MapDataDocument } from './mapData-model.js'; 
 const mapMetadata = new mongoose.Schema<MapMetadataDocument>({
