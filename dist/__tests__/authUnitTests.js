@@ -14,18 +14,18 @@ import { randomBytes } from 'crypto';
 const req = request(app);
 let server;
 describe('AuthController tests', () => {
-    beforeAll(() => {
+    beforeAll(() => __awaiter(void 0, void 0, void 0, function* () {
         if (!process.env.JWT_SECRET) {
             process.env.JWT_SECRET = randomBytes(32).toString('hex');
             process.env.JWT_EXPIRATION_TIME = "86400";
         }
         server = app.listen(4000);
-        connectDB();
-    });
-    afterAll(() => {
-        disconnectDB();
+        yield connectDB();
+    }));
+    afterAll(() => __awaiter(void 0, void 0, void 0, function* () {
+        yield disconnectDB();
         server.close();
-    });
+    }));
     describe('POST /auth/register', () => {
         it('example request to register a mocked user', () => __awaiter(void 0, void 0, void 0, function* () {
             const res = yield req.post('/auth/register').send({

@@ -28,9 +28,8 @@ const postSchema = new mongoose.Schema<PostDocument>({
   ],
   likes: { type: Number, default: 0 },
   forks: { type: Number, default: 0 },
-  mapMetadata: { type: ObjectId, ref: 'MapMetadata'},
+  mapMetadata: { type: ObjectId, ref: 'MapMetadata', required: false},
   tags: [{ type: String }],
-  publishDate: { type: Date },
 }, { timestamps: true });
 
 interface PostDocument extends Document {
@@ -44,7 +43,8 @@ interface PostDocument extends Document {
   forks: number;
   mapMetadata: mongoose.Schema.Types.ObjectId;
   tags: string[];
-  publishDate: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface Comment {

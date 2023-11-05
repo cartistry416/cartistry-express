@@ -12,13 +12,13 @@ const postsRouter = express.Router()
 import auth from '../auth/auth.js'
 
 
-postsRouter.get('/posts/search-title/:title', PostsController.searchPostsByTitle)
+postsRouter.get('/posts/search-title', PostsController.searchPostsByTitle)
 postsRouter.get('/posts/search-tags', PostsController.searchPostsByTags)
 postsRouter.get('/posts/user/:userId', PostsController.getPostsOwnedByUser)
-postsRouter.get('/posts/:id', PostsController.getPost)
+
 postsRouter.get('/posts/most-recent', PostsController.getMostRecentPosts)
 postsRouter.get('/posts/most-liked', PostsController.getMostLikedPosts)
-
+postsRouter.get('/posts/:id', PostsController.getPost)
 postsRouter.post('/posts', auth.verify, PostsController.createPost)
 
 // Any non-guest user can like, dislike, or comment on another user's post (or their own)

@@ -37,6 +37,7 @@ const getLoggedIn = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 userName: loggedInUser.userName,
                 email: loggedInUser.email,
                 isAdmin: loggedInUser.isAdmin,
+                userId
             }
         });
     }
@@ -85,7 +86,8 @@ const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             user: {
                 userName: existingUser.userName,
                 email: existingUser.email,
-                isAdmin: existingUser.isAdmin
+                isAdmin: existingUser.isAdmin,
+                userId: existingUser._id
             }
         });
     }
@@ -164,7 +166,8 @@ const registerUser = (req, res) => __awaiter(void 0, void 0, void 0, function* (
             user: {
                 userName: savedUser.userName,
                 email: savedUser.email,
-                isAdmin: savedUser.isAdmin
+                isAdmin: savedUser.isAdmin,
+                userId: savedUser._id
             }
         });
     }

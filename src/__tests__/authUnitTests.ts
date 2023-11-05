@@ -1,31 +1,24 @@
-import express from 'express'
 import request from 'supertest'
-import { authRouter } from 'routes/auth-router.js'
-import {UserDocument} from '../models/user-model.js'
-
-import { MongoClient } from 'mongodb'
-
 import { connectDB, disconnectDB} from '../db/db.js'
 import {app} from '../app.js'
 
-import cookieParser from 'cookie-parser'
 import { randomBytes } from 'crypto'
 const req = request(app)
 
 let server;
 describe('AuthController tests', () => {
 
-    beforeAll(() => {
+    beforeAll(async () => {
         if (!process.env.JWT_SECRET) {
             process.env.JWT_SECRET = randomBytes(32).toString('hex')
             process.env.JWT_EXPIRATION_TIME="86400"
         }
         server = app.listen(4000)
-        connectDB()
+        await connectDB()
     })
 
-    afterAll(() => {
-        disconnectDB()
+    afterAll(async () => {
+        await disconnectDB()
         server.close()
     })
 

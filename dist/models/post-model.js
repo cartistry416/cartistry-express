@@ -24,9 +24,8 @@ const postSchema = new mongoose.Schema({
     ],
     likes: { type: Number, default: 0 },
     forks: { type: Number, default: 0 },
-    mapMetadata: { type: ObjectId, ref: 'MapMetadata' },
+    mapMetadata: { type: ObjectId, ref: 'MapMetadata', required: false },
     tags: [{ type: String }],
-    publishDate: { type: Date },
 }, { timestamps: true });
 const PostModel = mongoose.model('Post', postSchema);
 export { PostModel };

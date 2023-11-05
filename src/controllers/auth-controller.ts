@@ -34,6 +34,7 @@ const getLoggedIn = async (req, res) => {
                 userName: loggedInUser.userName,
                 email: loggedInUser.email,
                 isAdmin: loggedInUser.isAdmin,
+                userId
             }
         })
     } catch (err) {
@@ -87,7 +88,8 @@ const loginUser = async (req, res) => {
             user: {
                 userName: existingUser.userName,
                 email: existingUser.email,
-                isAdmin: existingUser.isAdmin              
+                isAdmin: existingUser.isAdmin,
+                userId: existingUser._id         
             }
         })
 
@@ -172,7 +174,8 @@ const registerUser = async (req, res) => {
             user: {
                 userName: savedUser.userName,
                 email: savedUser.email,
-                isAdmin: savedUser.isAdmin             
+                isAdmin: savedUser.isAdmin,
+                userId: savedUser._id          
             }
         })
     } catch (err) {

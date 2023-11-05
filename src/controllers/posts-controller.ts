@@ -2,6 +2,8 @@ import { UserModel, UserDocument } from '../models/user-model.js'; // Import the
 import { PostModel, PostDocument } from '../models/post-model.js'; // Import the Post model and PostDocument
 import { MapMetadataModel, MapMetadataDocument } from '../models/mapMetadata-model.js'; // Import the MapMetadata model and MapMetadataDocument
 import { Types } from 'mongoose';
+import { title } from 'process';
+import { isInt16Array } from 'util/types';
 
 async function findUserById(userId: string): Promise<UserDocument | null> {
   try {
@@ -17,8 +19,8 @@ async function findUserById(userId: string): Promise<UserDocument | null> {
 
 function extractPostCardInfo(posts: PostDocument[]) {
     const extractedPosts =  posts.map(post => {
-        const {title, owner, ownerUserName, thumbnail, likes, forks, tags, publishDate, mapMetadata} = post
-        return {title, owner, ownerUserName, thumbnail, likes, forks, tags, publishDate, mapMetadata}
+        const {title, owner, ownerUserName, thumbnail, likes, forks, tags, mapMetadata, _id, createdAt, updatedAt} = post
+        return {title, owner, ownerUserName, thumbnail, likes, forks, tags, mapMetadata, _id, createdAt, updatedAt}
     })
     return extractedPosts
 }
@@ -33,7 +35,7 @@ const searchPostsByTitle = async (req, res) => {
     }
 
     const limit = body.limit
-    const postTitleQuery = new RegExp(req.params.title, "i") // case insensitive
+    const postTitleQuery = new RegExp(body.title, "i") // case insensitive
     try {
         const posts = await PostModel.find({title: postTitleQuery})
         // if (posts.length === 0) {
@@ -71,26 +73,58 @@ const searchPostsByTags = async (req, res) => {
 
 const getPostsOwnedByUser = async (req, res) => {
 
+    const user = await findUserById(req.params.userId)
+    if (!user) {
+        return res.status(500).json({
+            success: false,
+            errorMessage: "Unable to find user"
+        })
+    }
+
+
+    try {
+        const posts = await PostModel.find({ownerUserName: user.userName})
+        return res.status(200).json({
+            success: true,
+            posts: extractPostCardInfo(posts)
+        })
+    }
+    catch(err) {
+        return res.status(500).json({
+            success: false,
+            errorMessage: "Unable to find posts owned user"
+        })
+    }
+
+
 }
 
 const getPost = async (req , res) => {
-
+    const postId = req.params.id
+    try {
+        const post = await PostModel.findById(postId)
+        if (!post) {
+            return res.status(404).json({success: false, errorMessage: "post not found"})
+        }
+        return res.status(200).json({success: true, post})
+    }
+    catch (err) {
+        return res.status(400).json({success: false, errorMessage: `Unable to retrieve post`})
+    }
 }
 
 const getMostRecentPosts = async (req, res) => {
     const body = req.body;
-    if (!body) {
+    if (!body || !body.limit) {
         return res.status(400).json({
             success: false,
-            error: 'You must provide a body',
+            error: 'You must provide a body with a limit',
         })
     }
-
     const limit = body.limit
-
     try {
         const posts = await PostModel.aggregate([
-            {$sort: {publishDate: -1}},
+            {$sort: {createdAt: -1}},
             {$limit: limit}
         ])
         return res.status(200).json({success: true, posts})
@@ -102,10 +136,10 @@ const getMostRecentPosts = async (req, res) => {
 
 const getMostLikedPosts = async (req, res) => {
     const body = req.body;
-    if (!body) {
+    if (!body || !body.limit) {
         return res.status(400).json({
             success: false,
-            error: 'You must provide a body',
+            error: 'You must provide a body with a limit',
         })
     }
 
@@ -116,7 +150,7 @@ const getMostLikedPosts = async (req, res) => {
             {$sort: {likes: -1}},
             {$limit: limit}
         ])
-        return res.status(200).json({success: true, posts})
+        return res.status(200).json({success: true, posts: extractPostCardInfo(posts)})
     }
     catch (err) {
         return res.status(500).json({success: false, errorMessage: `Unable to retrieve ${limit} most recent posts`})
@@ -127,10 +161,10 @@ const getMostLikedPosts = async (req, res) => {
 const createPost = async (req, res) => {
     const body = req.body
     let result: any = null
-    if (!body) {
+    if (!body || !body.title || !body.textContent) {
         return res.status(400).json({
             success: false,
-            error: 'You must provide a body',
+            error: 'You must provide title and textContent in body',
         })
     }
 
@@ -142,27 +176,53 @@ const createPost = async (req, res) => {
         })
     }
 
-    let title = body.name === undefined ? `Untitled ${user.untitledCount}` : body.title
-    const post = new PostModel({...body, owner: req.userId, ownerUserName: user.userName, title})
+    let tags = []
+    if (body.tags) {
+        tags = body.tags;
+    }
+
+    const post = await PostModel.create({owner: req.userId, ownerUserName: user.userName, title: body.title, textContent: body.textContent, tags})
     if (!post) {
         return res.status(500).json({ success: false, errorMessage: "Unable to create post" })
     }
 
     try {
-        result = await UserModel.findByIdAndUpdate(req.userId, {$push: {posts: post._id}, $inc: {untitledCount: 1}})
+        result = await UserModel.findByIdAndUpdate(req.userId, {$push: {posts: post._id}})
         if (!result) {
             return res.status(500).json({success: false, errorMessage: "Unable to update user"})
         }
-        await post.save()
+        return res.status(200).json({success: true, postId: post._id})
     }
     catch (err) {
         return res.status(500).json({success: false, errorMessage: "Unable to save post or update user"})
     }
-
-    return res.status(200).json({success: true})
 }
 
 const editPost = async (req, res) => {
+    const body = req.body;
+    if (!body) {
+        return res.status(400).json({
+            success: false,
+            error: 'You must provide a body',
+        })
+    }
+
+    let user = await findUserById(req.userId)
+    if (!user) {
+        return res.status(500).json({
+            success: false,
+            errorMessage: "Unable to find user"
+        })
+    }
+
+    try {
+        const post = await PostModel.findByIdAndUpdate(req.params.id, {title: body.title, textContent: body.textContent}, {new: true}) // TODO IMAGES
+        return res.status(200).json({success: true, post})
+    }
+    catch (err) {
+        return res.status(500).json({success: false, errorMessage: "Unable to edit post"})
+    }
+
 
 }
 
@@ -184,13 +244,14 @@ const deletePost = async (req, res) => {
     }
 
     try {
-        const deletedPost = await PostModel.findByIdAndDelete(body.postId)
+        const deletedPost = await PostModel.findById(req.params.id)
         if (!deletedPost) {
             return res.status(400).json({
                 success: false,
                 errorMessage: "Unable to find post"
             })
         }
+        await deletedPost.remove()
         let result = await UserModel.updateMany({}, {$pull: {likedPosts: deletedPost._id}})
         if (!result) {
             return res.status(500).json({success: false, errorMessage: "Unable to remove deleted posts from all users likes"})
@@ -225,32 +286,63 @@ const commentOnPost = async (req, res) => {
     const newComment = {
         authorUserName: user.userName,
         comment: body.comment,
-        publishDate: Date.now()
+        publishDate: new Date(Date.now())
     }
 
-   const post = await PostModel.findByIdAndUpdate(req.params.id, {$push: {comments: newComment}}, {new: true})
+   const post = await PostModel.findById(req.params.id)
    if (!post) {
-        return res.status(400).json({success: false, errorMessage: "Unable to find post"})
+        return res.status(404).json({success: false, errorMessage: "Unable to find post"})
    }
-   return res.status(200).json({success: true})
+
+   const newComments = [...post.comments, newComment]
+   post.comments.push(newComment)
+   post.markModified('comments')
+   await post.save()
+   return res.status(200).json({success: true, comments: newComments})
 
 }
 
 
 const editComment = async (req, res) => {
+    const body = req.body;
+    if (!body || !body.comment || body.index === undefined || !(body.index >= 0)) {
+        return res.status(400).json({
+            success: false,
+            errorMessage: 'You must provide a body with comment and index',
+        })
+    }
+    let user = await findUserById(req.userId)
+    if (!user) {
+        return res.status(500).json({
+            success: false,
+            errorMessage: "Unable to find user"
+        })
+    }
 
-    
+    const post = await PostModel.findById(req.params.id)
+    if (!post) {
+        return res.status(404).json({success: false, errorMessage: "Unable to find post"})
+    }
+
+    const oldComment = post.comments[body.index]
+    if (oldComment.authorUserName !== user.userName) {
+        return res.status(401).json({success: false, errorMessage: "Unauthorized to edit this comment"})
+    }
+    const newComment = {
+        authorUserName: user.userName,
+        comment: body.comment,
+        publishDate: new Date(Date.now())
+    }
+    post.comments[body.index] = newComment
+    post.markModified('comments')
+    await post.save()
+
+    return res.status(200).json({success:true, comments: post.comments})
+
+
 }
 
 const updatePostLikes = async(req, res) => {
-
-    const body = req.body;
-    if (!body) {
-        return res.status(400).json({
-            success: false,
-            error: 'You must provide a body',
-        })
-    }
 
     let user = await findUserById(req.userId)
     if (!user) {
@@ -261,7 +353,7 @@ const updatePostLikes = async(req, res) => {
     }
 
     const indexOfAlreadyLiked = user.likedPosts.findIndex(postId =>{
-        postId.toString() === req.params.id
+        return postId.toString() === req.params.id
     })
     
     let post: PostDocument | null = null
@@ -302,6 +394,36 @@ const updatePostLikes = async(req, res) => {
 
 
 const deleteComment = async (req, res) => {
+    const body = req.body;
+    if (!body || body.index === undefined || !(body.index >= 0)) {
+        return res.status(400).json({
+            success: false,
+            errorMessage: 'You must provide a body with comment and index',
+        })
+    }
+    let user = await findUserById(req.userId)
+    if (!user) {
+        return res.status(500).json({
+            success: false,
+            errorMessage: "Unable to find user"
+        })
+    }
+
+    const post = await PostModel.findById(req.params.id)
+    if (!post) {
+        return res.status(404).json({success: false, errorMessage: "Unable to find post"})
+    }
+
+    const comment = post.comments[body.index]
+    if (comment.authorUserName !== user.userName) {
+        return res.status(401).json({success: false, errorMessage: "Unauthorized to edit this comment"})
+    }
+
+    post.comments.splice(body.index, 1)
+    post.markModified('comments')
+    await post.save()
+
+    return res.status(200).json({success:true, comments: post.comments})
 
 }
 

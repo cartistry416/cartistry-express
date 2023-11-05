@@ -1,9 +1,9 @@
 import jwt from 'jsonwebtoken';
 //const jwt = require("jsonwebtoken")
 const verify = (req, res, next) => {
-    console.log("req: " + req);
-    console.log("next: " + next);
-    console.log("Who called verify?");
+    // console.log("req: " + req);
+    // console.log("next: " + next);
+    // console.log("Who called verify?");
     try {
         const token = req.cookies.token;
         if (!token) {
@@ -14,7 +14,7 @@ const verify = (req, res, next) => {
             });
         }
         const verified = jwt.verify(token, process.env.JWT_SECRET);
-        console.log("verified.userId: " + verified.userId);
+        //console.log("verified.userId: " + verified.userId);
         req.userId = verified.userId;
         next();
     }
