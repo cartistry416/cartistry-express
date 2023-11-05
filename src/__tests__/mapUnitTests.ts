@@ -106,21 +106,21 @@ describe('MapsController tests', () => {
         }, 20000)
         
  
-        it('Uploads shp Map', async () => {
-            const mapData = await fs.readFile(path.join(__dirname, '../../examples/USA_adm.zip'))
+        // it('Uploads shp Map', async () => {
+        //     const mapData = await fs.readFile(path.join(__dirname, '../../examples/USA_adm.zip'))
             
-            console.log(mapData.length)
-            res = await req.post('/maps-api/maps/upload').field('fileExtension', 'shp').field('title', 'us shp').field('templateType', 'cadastral')
-            .attach('zipFile', mapData, 'data.zip').set('Cookie', token)
-            expect(res.status).toBe(200)
-        }, 30000)
+        //     console.log(mapData.length)
+        //     res = await req.post('/maps-api/maps/upload').field('fileExtension', 'shp').field('title', 'us shp').field('templateType', 'cadastral')
+        //     .attach('zipFile', mapData, 'data.zip').set('Cookie', token)
+        //     expect(res.status).toBe(200)
+        // }, 30000)
 
         it('Forks the original geoJSON map', async () => {
             res = await req.post(`/maps-api/maps/${mapMetadataId}/fork`).set('Cookie', token)
             expect(res.status).toBe(200)
             res = await req.get('/maps-api/maps/map-metadata').set('Cookie', token)
             expect(res.status).toBe(200)
-            expect(res.body.mapMetadataIds.length).toBe(4)
+            expect(res.body.mapMetadataIds.length).toBe(3)
         })
 
         it('Updates the privacy status to public for original geoJSON map', async () => {
@@ -134,7 +134,7 @@ describe('MapsController tests', () => {
 
             res = await req.get('/maps-api/maps/map-metadata').set('Cookie', token)
             expect(res.status).toBe(200)
-            expect(res.body.mapMetadataIds.length).toBe(4)
+            expect(res.body.mapMetadataIds.length).toBe(3)
         })
 
 

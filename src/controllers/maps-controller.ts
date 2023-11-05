@@ -146,7 +146,7 @@ const getMapMetadataOwnedByUser = async (req, res) => {
     if (!user) {
         return res.status(500).json({success: false, errorMessage: "Unable to find user"})
     }
-    console.log(user.mapsMetadata.length)
+    //console.log(user.mapsMetadata.length)
     return res.status(200).json({success: true, mapMetadataIds: user.mapsMetadata})
 }
 const getPublicMapMetadataOwnedByUser = async (req, res) => {

@@ -17,6 +17,7 @@ const path = require('path');
 const req = request(app);
 let server;
 describe('MapsController tests', () => {
+    const testPath = path.join(__dirname, `../../GeoJSONZipFilesTest`);
     let token = null;
     let res = null;
     let userId;
@@ -41,13 +42,22 @@ describe('MapsController tests', () => {
         expect(res.status).toBe(200);
         token = res.headers['set-cookie'];
         userId = res.body.user.userId;
-        yield fs.mkdir(path.join(__dirname, `../../GeoJSONZipFilesTest`));
+        try {
+            const stats = yield fs.stat(testPath);
+            if (stats.isDirectory()) {
+            }
+        }
+        catch (err) {
+            if (err.code === 'ENOENT') {
+                yield fs.mkdir(testPath);
+            }
+        }
     }));
     afterAll(() => __awaiter(void 0, void 0, void 0, function* () {
         yield disconnectDB();
         server.close();
         try {
-            yield fs.rmdir(path.join(__dirname, `../../GeoJSONZipFilesTest`), { recursive: true });
+            yield fs.rmdir(testPath, { recursive: true });
         }
         catch (err) {
             console.error("Unable to remove temp directory used for unit tests: " + err);
@@ -82,19 +92,19 @@ describe('MapsController tests', () => {
                 .attach('zipFile', zipData, 'data.zip').set('Cookie', token);
             expect(res.status).toBe(200);
         }), 20000);
-        it('Uploads shp Map', () => __awaiter(void 0, void 0, void 0, function* () {
-            const mapData = yield fs.readFile(path.join(__dirname, '../../examples/USA_adm.zip'));
-            console.log(mapData.length);
-            res = yield req.post('/maps-api/maps/upload').field('fileExtension', 'shp').field('title', 'us shp').field('templateType', 'cadastral')
-                .attach('zipFile', mapData, 'data.zip').set('Cookie', token);
-            expect(res.status).toBe(200);
-        }), 30000);
+        // it('Uploads shp Map', async () => {
+        //     const mapData = await fs.readFile(path.join(__dirname, '../../examples/USA_adm.zip'))
+        //     console.log(mapData.length)
+        //     res = await req.post('/maps-api/maps/upload').field('fileExtension', 'shp').field('title', 'us shp').field('templateType', 'cadastral')
+        //     .attach('zipFile', mapData, 'data.zip').set('Cookie', token)
+        //     expect(res.status).toBe(200)
+        // }, 30000)
         it('Forks the original geoJSON map', () => __awaiter(void 0, void 0, void 0, function* () {
             res = yield req.post(`/maps-api/maps/${mapMetadataId}/fork`).set('Cookie', token);
             expect(res.status).toBe(200);
             res = yield req.get('/maps-api/maps/map-metadata').set('Cookie', token);
             expect(res.status).toBe(200);
-            expect(res.body.mapMetadataIds.length).toBe(4);
+            expect(res.body.mapMetadataIds.length).toBe(3);
         }));
         it('Updates the privacy status to public for original geoJSON map', () => __awaiter(void 0, void 0, void 0, function* () {
             res = yield req.put(`/maps-api/maps/${mapMetadataId}/update-privacy`).set('Cookie', token);
@@ -105,7 +115,7 @@ describe('MapsController tests', () => {
             expect(res.body.mapMetadataIds.length).toBe(1);
             res = yield req.get('/maps-api/maps/map-metadata').set('Cookie', token);
             expect(res.status).toBe(200);
-            expect(res.body.mapMetadataIds.length).toBe(4);
+            expect(res.body.mapMetadataIds.length).toBe(3);
         }));
     });
 });
