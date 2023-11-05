@@ -7,7 +7,9 @@ import mongoose from 'mongoose'
 import {MapFileParserFactory} from '../utils/MapFileParser.js'
 import { bufferToZip, zipToDisk, diskToZipBuffer} from '../utils/utils.js'
 import { findUserById } from '../utils/utils.js'
-const path = require('path');
+
+import path from 'path'
+
 import {Request, Response} from 'express'
 const uploadMap = async (req, res) => {
 

@@ -8,7 +8,8 @@ import { promises as fs, stat } from 'fs'
 
 import * as gjv from 'geojson-validation'
 import { arrayBuffer } from 'stream/consumers'
-const path = require('path');
+
+import path from 'path'
 
 const req = request(app)
 

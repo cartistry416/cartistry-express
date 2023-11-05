@@ -13,7 +13,7 @@ import mongoose from 'mongoose';
 import { MapFileParserFactory } from '../utils/MapFileParser.js';
 import { bufferToZip, zipToDisk, diskToZipBuffer } from '../utils/utils.js';
 import { findUserById } from '../utils/utils.js';
-const path = require('path');
+import path from 'path';
 const uploadMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const body = req.body;
     if (!body || !req.file || !body.fileExtension) {

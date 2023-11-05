@@ -13,7 +13,7 @@ import { app } from '../app.js';
 import { randomBytes } from 'crypto';
 import { bufferToZip } from '../utils/utils.js';
 import { promises as fs } from 'fs';
-const path = require('path');
+import path from 'path';
 const req = request(app);
 let server;
 describe('MapsController tests', () => {
