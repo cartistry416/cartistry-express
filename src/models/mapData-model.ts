@@ -2,7 +2,7 @@ import mongoose, { Document, Model, Schema } from 'mongoose';
 
 // Define the MapData schema
 const mapDataSchema = new Schema<MapDataDocument>({
-  geoJSON: { type: Object, required: true },
+  geoJSONZipPath: { type: String, required: true },
   proprietaryJSON: {
     templateType: { type: String, required: true },
     legend: {
@@ -27,7 +27,7 @@ const mapDataSchema = new Schema<MapDataDocument>({
 
 // Define the MapDataDocument interface to represent a map data document
 interface MapDataDocument extends Document {
-  geoJSON: object;
+  geoJSONZipPath: String;
   proprietaryJSON: {
     templateType: string;
     legend: {

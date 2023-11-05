@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import archiver from 'archiver';
 import { UserModel } from '../models/user-model.js';
+import { promises as fs } from 'fs';
 function findUserById(userId) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -45,4 +46,21 @@ function bufferToZip(data) {
         });
     });
 }
-export { bufferToZip, findUserById };
+function zipToDisk(path, data) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            yield fs.writeFile(path, data);
+            return true;
+        }
+        catch (err) {
+            console.error("Unable to write zip file to disk: " + err);
+            return false;
+        }
+    });
+}
+function diskToZipBuffer(path) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return yield fs.readFile(path);
+    });
+}
+export { bufferToZip, findUserById, zipToDisk, diskToZipBuffer };

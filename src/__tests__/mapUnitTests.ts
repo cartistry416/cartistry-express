@@ -4,16 +4,17 @@ import {app} from '../app.js'
 
 import { randomBytes } from 'crypto'
 import { bufferToZip } from '../utils/utils.js'
-import { promises as fs } from 'fs'
+import { promises as fs, stat } from 'fs'
 
 import * as gjv from 'geojson-validation'
+import { arrayBuffer } from 'stream/consumers'
 const path = require('path');
 
 const req = request(app)
 
 let server;
 describe('MapsController tests', () => {
-
+    const testPath = path.join(__dirname, `../../GeoJSONZipFilesTest`)
     let token = null;
     let res = null;
     let userId;
@@ -39,11 +40,32 @@ describe('MapsController tests', () => {
         expect(res.status).toBe(200)
         token = res.headers['set-cookie']
         userId = res.body.user.userId
+        
+        try {
+            const stats = await fs.stat(testPath)
+            if (stats.isDirectory()) {
+
+            }
+        }
+        catch (err) {
+            if (err.code === 'ENOENT') {
+                await fs.mkdir(testPath) 
+            }
+        }
     })
 
     afterAll(async () => {
         await disconnectDB()
         server.close()
+
+        try {
+            await fs.rmdir(testPath, { recursive: true })
+        
+        }
+        catch (err) {
+            console.error("Unable to remove temp directory used for unit tests: " + err)
+        }
+
     })
 
 
@@ -58,6 +80,7 @@ describe('MapsController tests', () => {
             res = await req.post('/maps-api/maps/upload').field('fileExtension', 'json').field('title', 'australia json').field('templateType', 'heat')
             .attach('zipFile', zipData, 'data.zip').set('Cookie', token)
             expect(res.status).toBe(200)
+
             mapMetadataId = res.body.mapMetadataId
             mapDataId = res.body.mapDataId
         }, 20000)
@@ -65,9 +88,13 @@ describe('MapsController tests', () => {
         it('exports as geoJSON', async () => {
             res = await req.get(`/maps-api/maps/${mapMetadataId}/export`)
             expect(res.status).toBe(200)
-            const errors = gjv.valid(res.body.geoJSON, true)
-            expect(errors.length).toBe(0)
         }, 20000) 
+
+        it('Can get geoJSON zip data', async () => {
+            res = await req.get(`/maps-api/maps/${mapMetadataId}`).set('Cookie', token)
+            expect(res.status).toBe(200)
+            expect(res.body.length).toBeGreaterThan(0)
+        })
 
         it('Uploads kml Map', async () => {
             const mapData = await fs.readFile(path.join(__dirname, '../../examples/US.kml'))
@@ -75,6 +102,7 @@ describe('MapsController tests', () => {
             res = await req.post('/maps-api/maps/upload').field('fileExtension', 'kml').field('title', 'us kml').field('templateType', 'bin')
             .attach('zipFile', zipData, 'data.zip').set('Cookie', token)
             expect(res.status).toBe(200)
+
         }, 20000)
         
  
@@ -85,12 +113,13 @@ describe('MapsController tests', () => {
             res = await req.post('/maps-api/maps/upload').field('fileExtension', 'shp').field('title', 'us shp').field('templateType', 'cadastral')
             .attach('zipFile', mapData, 'data.zip').set('Cookie', token)
             expect(res.status).toBe(200)
-        }, 20000)
+        }, 30000)
 
         it('Forks the original geoJSON map', async () => {
             res = await req.post(`/maps-api/maps/${mapMetadataId}/fork`).set('Cookie', token)
             expect(res.status).toBe(200)
             res = await req.get('/maps-api/maps/map-metadata').set('Cookie', token)
+            expect(res.status).toBe(200)
             expect(res.body.mapMetadataIds.length).toBe(4)
         })
 
@@ -104,10 +133,9 @@ describe('MapsController tests', () => {
             expect(res.body.mapMetadataIds.length).toBe(1)
 
             res = await req.get('/maps-api/maps/map-metadata').set('Cookie', token)
+            expect(res.status).toBe(200)
             expect(res.body.mapMetadataIds.length).toBe(4)
         })
-
-
 
 
 

@@ -1,7 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 // Define the MapData schema
 const mapDataSchema = new Schema({
-    geoJSON: { type: Object, required: true },
+    geoJSONZipPath: { type: String, required: true },
     proprietaryJSON: {
         templateType: { type: String, required: true },
         legend: {

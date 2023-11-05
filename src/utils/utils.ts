@@ -2,6 +2,8 @@
 import archiver from 'archiver';
 import {UserModel, UserDocument} from '../models/user-model.js'
 
+import { promises as fs } from 'fs'
+
 async function findUserById(userId: string): Promise<UserDocument | null> {
   try {
     const user = await UserModel.findById(userId)
@@ -42,4 +44,24 @@ async function bufferToZip(data: Buffer): Promise<Buffer> {
  })
 }
 
-export {bufferToZip, findUserById}
+
+async function zipToDisk(path: string, data: Buffer): Promise<Boolean> {
+  try {
+    await fs.writeFile(path, data)
+    return true
+  }
+  catch (err) {
+    console.error("Unable to write zip file to disk: " + err)
+    return false
+  }
+}
+
+async function diskToZipBuffer(path): Promise<Buffer> {
+  return await fs.readFile(path)
+}
+
+
+
+
+
+export {bufferToZip, findUserById, zipToDisk, diskToZipBuffer}

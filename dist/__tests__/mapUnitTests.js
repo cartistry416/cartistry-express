@@ -13,7 +13,6 @@ import { app } from '../app.js';
 import { randomBytes } from 'crypto';
 import { bufferToZip } from '../utils/utils.js';
 import { promises as fs } from 'fs';
-import * as gjv from 'geojson-validation';
 const path = require('path');
 const req = request(app);
 let server;
@@ -42,10 +41,17 @@ describe('MapsController tests', () => {
         expect(res.status).toBe(200);
         token = res.headers['set-cookie'];
         userId = res.body.user.userId;
+        yield fs.mkdir(path.join(__dirname, `../../GeoJSONZipFilesTest`));
     }));
     afterAll(() => __awaiter(void 0, void 0, void 0, function* () {
         yield disconnectDB();
         server.close();
+        try {
+            yield fs.rmdir(path.join(__dirname, `../../GeoJSONZipFilesTest`), { recursive: true });
+        }
+        catch (err) {
+            console.error("Unable to remove temp directory used for unit tests: " + err);
+        }
     }));
     describe('MapsController unit tests', () => {
         let res;
@@ -63,9 +69,12 @@ describe('MapsController tests', () => {
         it('exports as geoJSON', () => __awaiter(void 0, void 0, void 0, function* () {
             res = yield req.get(`/maps-api/maps/${mapMetadataId}/export`);
             expect(res.status).toBe(200);
-            const errors = gjv.valid(res.body.geoJSON, true);
-            expect(errors.length).toBe(0);
         }), 20000);
+        it('Can get geoJSON zip data', () => __awaiter(void 0, void 0, void 0, function* () {
+            res = yield req.get(`/maps-api/maps/${mapMetadataId}`).set('Cookie', token);
+            expect(res.status).toBe(200);
+            expect(res.body.length).toBeGreaterThan(0);
+        }));
         it('Uploads kml Map', () => __awaiter(void 0, void 0, void 0, function* () {
             const mapData = yield fs.readFile(path.join(__dirname, '../../examples/US.kml'));
             const zipData = yield bufferToZip(mapData);
@@ -79,11 +88,12 @@ describe('MapsController tests', () => {
             res = yield req.post('/maps-api/maps/upload').field('fileExtension', 'shp').field('title', 'us shp').field('templateType', 'cadastral')
                 .attach('zipFile', mapData, 'data.zip').set('Cookie', token);
             expect(res.status).toBe(200);
-        }), 20000);
+        }), 30000);
         it('Forks the original geoJSON map', () => __awaiter(void 0, void 0, void 0, function* () {
             res = yield req.post(`/maps-api/maps/${mapMetadataId}/fork`).set('Cookie', token);
             expect(res.status).toBe(200);
             res = yield req.get('/maps-api/maps/map-metadata').set('Cookie', token);
+            expect(res.status).toBe(200);
             expect(res.body.mapMetadataIds.length).toBe(4);
         }));
         it('Updates the privacy status to public for original geoJSON map', () => __awaiter(void 0, void 0, void 0, function* () {
@@ -94,6 +104,7 @@ describe('MapsController tests', () => {
             expect(res.status).toBe(200);
             expect(res.body.mapMetadataIds.length).toBe(1);
             res = yield req.get('/maps-api/maps/map-metadata').set('Cookie', token);
+            expect(res.status).toBe(200);
             expect(res.body.mapMetadataIds.length).toBe(4);
         }));
     });

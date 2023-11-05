@@ -6,14 +6,14 @@ import AdmZip from 'adm-zip'
 import * as gjv from 'geojson-validation'
 
 interface MapParser {
-    parse(data: Buffer): Promise<Object | Error>
+    parse(data: Buffer): Promise<Buffer>
 
 }
 
 class GeoJSONFileReader implements MapParser {
     constructor() {
     }
-    async parse(data: Buffer): Promise<Object | Error> {
+    async parse(data: Buffer): Promise<Buffer> {
         const zip = new AdmZip(data)
         const zipEntries = zip.getEntries();
         if (zipEntries.length !== 1) {
@@ -25,7 +25,7 @@ class GeoJSONFileReader implements MapParser {
         if (errors.length > 0) {
            throw new Error(`${errors.join(', ')}`)
         }
-        return JSON.parse(zipEntry)
+        return Buffer.from(JSON.stringify(geoJSON))
     }
 
 }
@@ -34,14 +34,15 @@ class KMLFileReader implements MapParser {
     constructor(private domParser = new DOMParser()) {
 
     }
-    async parse(data: Buffer): Promise<Object | Error> {
+    async parse(data: Buffer): Promise<Buffer> {
         const zip = new AdmZip(data)
         const zipEntries = zip.getEntries();
         if (zipEntries.length !== 1) {
             throw new Error('Expected one file in the zip archive.')
         }
         const zipEntry: string = zipEntries[0].getData().toString()
-        return tj.kml(this.domParser.parseFromString(zipEntry, 'text/xml'))
+        const geoJSON = tj.kml(this.domParser.parseFromString(zipEntry, 'text/xml'))
+        return Buffer.from(JSON.stringify(geoJSON))
     }
 
 }
@@ -50,16 +51,9 @@ class SHPFileReader implements MapParser {
     constructor() {
 
     }
-    async parse(data: Buffer): Promise<Object>  {
-        let geoJSON;
-        
-        try {
-            geoJSON = await shp.parseZip(data)
-        }
-        catch(err) {
-            console.error("errorrrrr" + err)
-        }
-        return geoJSON
+    async parse(data: Buffer): Promise<Buffer>  {
+        const geoJSON = await shp.parseZip(data)
+        return Buffer.from(JSON.stringify(geoJSON))
     }
 
 }

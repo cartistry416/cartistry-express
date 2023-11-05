@@ -29,7 +29,7 @@ class GeoJSONFileReader {
             if (errors.length > 0) {
                 throw new Error(`${errors.join(', ')}`);
             }
-            return JSON.parse(zipEntry);
+            return Buffer.from(JSON.stringify(geoJSON));
         });
     }
 }
@@ -45,7 +45,8 @@ class KMLFileReader {
                 throw new Error('Expected one file in the zip archive.');
             }
             const zipEntry = zipEntries[0].getData().toString();
-            return tj.kml(this.domParser.parseFromString(zipEntry, 'text/xml'));
+            const geoJSON = tj.kml(this.domParser.parseFromString(zipEntry, 'text/xml'));
+            return Buffer.from(JSON.stringify(geoJSON));
         });
     }
 }
@@ -54,14 +55,8 @@ class SHPFileReader {
     }
     parse(data) {
         return __awaiter(this, void 0, void 0, function* () {
-            let geoJSON;
-            try {
-                geoJSON = yield shp.parseZip(data);
-            }
-            catch (err) {
-                console.error("errorrrrr" + err);
-            }
-            return geoJSON;
+            const geoJSON = yield shp.parseZip(data);
+            return Buffer.from(JSON.stringify(geoJSON));
         });
     }
 }
