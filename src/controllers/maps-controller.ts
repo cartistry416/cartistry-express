@@ -1,100 +1,186 @@
-import { UserModel, UserDocument } from '../models/user-model.js'; // Import the User model and UserDocument
-import { PostModel, PostDocument } from '../models/post-model.js'; // Import the Post model and PostDocument
-import { MapMetadataModel, MapMetadataDocument } from '../models/mapMetadata-model.js'; // Import the MapMetadata model and MapMetadataDocument
-import { Types } from 'mongoose';
-import * as shp from 'shpjs';
-import * as tj from '@mapbox/togeojson';
+import { UserModel, UserDocument } from '../models/user-model.js'
+import { PostModel, PostDocument } from '../models/post-model.js'
+import { MapMetadataModel, MapMetadataDocument } from '../models/mapMetadata-model.js'
+import { MapDataModel, MapDataDocument } from '../models/mapData-model.js'
 
-import * as xmldom from 'xmldom'
-
-
-const DOMParser = xmldom.DOMParser;
-import * as AdmZip from 'adm-zip'
-//const AdmZip = require('adm-zip');
-import * as gjv from 'geojson-validation'
-//const gjv = require("geojson-validation");
-
+import mongoose from 'mongoose'
+import {MapFileParserFactory} from '../utils/MapFileParser.js'
+import { findUserById } from '../utils/utils.js'
 
 const uploadMap = async (req, res) => {
 
     const body = req.body
-    if (!body || !body.zipFile || !body.fileExtension) {
-        return res.status(400).json({sucess: false, errorMessage: "Body is missing required data"})
+    if (!body || !req.file || !body.fileExtension) {
+        return res.status(400).json({sucess: false, errorMessage: "Body is missing file or file extension"})
+    }
+    if (!body.title) {
+        return res.status(400).json({sucess: false, errorMessage: "Body is missing title"})
+    }
+    const validTemplates: Object = {
+        heat: "heat",
+        landmark: "landmark",
+        cadastral: "cadastral",
+        subway: "subway",
+        bin: "bin"
+    }
+    if (!validTemplates.hasOwnProperty(body.templateType)) {
+        return res.status(400).json({sucess: false, errorMessage: "Body is missing template type or one provided is incorrect"})
     }
 
-    let geoJSON = {};
-
-    try {
-        if (body.fileExtension === '.shp') {
-            const zipFileBuffer = body.zipFile as Buffer
-            geoJSON = await shp.parseZip(zipFileBuffer)
-        }
-        else if (body.fileExtension === '.json') {
-            const zipFileBuffer = body.zipFile as Buffer
-            const zip = new AdmZip(zipFileBuffer)
-    
-            const zipEntries = zip.getEntries();
-            if (zipEntries.length !== 1) {
-            return res.status(400).send('Expected one file in the zip archive.');
-            }
-            const zipEntry = zipEntries[0].getData().toString()
-            if (!gjv.valid(zipEntry)) {
-                return res.status(400).json({sucess: false, errorMessage: "JSON uploaded was not valid geoJSON"})
-            }
-            geoJSON = JSON.parse(zipEntry)
-        }
-        else if (body.fileExtension === '.kml') {
-            const zipFileBuffer = body.zipFile as Buffer
-            const zip = new AdmZip(zipFileBuffer)
-    
-            const zipEntries = zip.getEntries();
-            if (zipEntries.length !== 1) {
-            return res.status(400).send('Expected one file in the zip archive.');
-            }
-            const zipEntry = zipEntries[0].getData.toString()
-            const xmlParser = new DOMParser()
-            const kml = xmlParser.parseFromString(zipEntry, 'text/xml')
-            geoJSON = tj.kml(kml)  
-        }
-    }
-    catch (err) {
-        console.error("Parsing error!" + err)
-        return res.status(400).json({sucess: false, errorMessage: "Parsing error!"})
-
+    const user = await findUserById(req.userId)
+    if (!user) {
+        return res.status(500).json({success: false, errorMessage: "Unable to find user"})
     }
 
-    if (!geoJSON) {
+    let geoJSON: Object;
+    const mapFileParser = MapFileParserFactory(body.fileExtension)
+    if (!mapFileParser) {
         return res.status(400).json({sucess: false, errorMessage: "Unsupported file extension!"})
     }
+    try {
+        const zipFileBuffer = req.file.buffer
+        console.log(zipFileBuffer.length)
+        geoJSON = await mapFileParser.parse(zipFileBuffer)
+    }
+    catch (err) {
+        return res.status(400).json({sucess: false, errorMessage: "Parsing error: " + err})
+    }
 
-    console.log(JSON.stringify(geoJSON))
-
-
-
-
-    
-    
+    try {
+        const mapDataDocument = await MapDataModel.create({geoJSON, proprietaryJSON: {templateType: body.templateType}})
+        const mapMetadataDocument = await MapMetadataModel.create({title: body.title, owner: user._id, mapData: mapDataDocument._id})
+        user.mapsMetadata.push(mapMetadataDocument._id)
+        user.markModified('mapsMetadata')
+        await user.save()
+        return res.status(200).json({success: true, mapMetadataId: mapMetadataDocument._id, mapDataId: mapDataDocument._id})
+    }
+    catch (err) {
+        console.error(`this is prob where it errors lol ` + err)
+        return res.status(500).json({successs: false, errorMessage: "bad stuff"})
+    }
 }
 
 
 const forkMap = async (req, res) => {
+    const user = await findUserById(req.userId)
+    if (!user) {
+        return res.status(500).json({success: false, errorMessage: "Unable to find user"})
+    }
+
+    try {
+        const originalMapMetaDataDocument = await MapMetadataModel.findById(req.params.id)
+        if (!originalMapMetaDataDocument) {
+            return res.status(404).json({success: false, errorMessage: "Unable to find mapMetadata from provided id"})
+        }
+        let mapDataIdQuery = originalMapMetaDataDocument.mapData.toString()
+        const originalMapDataDocument = await MapDataModel.findById(mapDataIdQuery)
+        if(!originalMapDataDocument) {
+            return res.status(404).json({success: false, errorMessage: "Unable to find map data via id on mapMetadata"})
+        }
     
+        const cloneMapMetaData = originalMapMetaDataDocument
+        cloneMapMetaData.owner = user._id
+        cloneMapMetaData._id = mongoose.Types.ObjectId()
+
+        const cloneMapData = originalMapDataDocument
+        cloneMapData._id = mongoose.Types.ObjectId()
+        cloneMapMetaData.mapData = cloneMapData._id
+
+        cloneMapData.isNew = true
+        cloneMapMetaData.isNew = true
+
+        await cloneMapData.save()
+        await cloneMapMetaData.save()
+        user.mapsMetadata.push(cloneMapMetaData._id)
+        user.markModified('mapsMetadata')
+        await user.save()
+
+
+
+        originalMapMetaDataDocument.forks++;
+        await originalMapMetaDataDocument.save()
+
+        return res.status(200).json({success: true})
+    }
+    catch(err) {
+        return res.status(500).json({success: false, errorMessage: "Unable to create or save something to the database " + err})
+    }
+
+
+
+
 }
 
 const exportMap = async (req, res) => {
+
+    try {
+        const mapMetadataDocument = await MapMetadataModel.findById(req.params.id)
+        const mapDataDocument = await MapDataModel.findById(mapMetadataDocument.mapData)
+        const geoJSON = mapDataDocument.geoJSON
+        return res.status(200).json({success: true, geoJSON})
+    }
+    catch (err) {
+        return res.status(400).json({success: false, errorMessage: 'Unable to find mapMetadata or mapData'})
+    }
     
 }
 const getMapMetadataOwnedByUser = async (req, res) => {
-    
+    const user = await findUserById(req.userId)
+    if (!user) {
+        return res.status(500).json({success: false, errorMessage: "Unable to find user"})
+    }
+
+    return res.status(200).json({success: true, mapMetadataIds: user.mapsMetadata})
 }
 const getPublicMapMetadataOwnedByUser = async (req, res) => {
-    
+    const user = await findUserById(req.params.userId)
+    if (!user) {
+        return res.status(500).json({success: false, errorMessage: "Unable to find user"})
+    }
+
+    const publicMapMetadataIds: string[] = []
+    for (let i=0; i<user.mapsMetadata.length; i++) {
+        const mapMetadataId = user.mapsMetadata[i]
+        const mapMetaDataDocument = await MapMetadataModel.findById(mapMetadataId)
+        if (!mapMetaDataDocument) {
+            console.error('Something went wrong, could not find mapMetadata document from users array of metadata ids')
+            continue
+        }
+        else if (!mapMetaDataDocument.isPrivated) {
+            publicMapMetadataIds.push(mapMetadataId.toString())
+        }
+    }
+
+    return res.status(200).json({success: true, mapMetadataIds: publicMapMetadataIds})
+
 }
 const getMapData = async (req, res) => {
     
 }
 const updateMapPrivacy = async (req, res) => {
+    const user = await findUserById(req.userId)
+    if (!user) {
+        return res.status(500).json({success: false, errorMessage: "Unable to find user"})
+    }
+    const mapMetadata = await MapMetadataModel.findById(req.params.id)
+    if (!mapMetadata) {
+        return res.status(404).json({success:false, errorMessage: "Unable to find mapMetadata"})
+    }
+    if (mapMetadata.owner.toString() !== user._id.toString()) {
+        console.log(`${mapMetadata.owner } !== ${user._id}`)
+        return res.status(401).json({success:false, errorMessage: "Not authorized to change privacy status of this map metadata"})
+    }
+
+    mapMetadata.isPrivated = !mapMetadata.isPrivated 
     
+    try {      
+        await mapMetadata.save()
+        return res.status(200).json({success: true, isPrivated: mapMetadata.isPrivated})
+    }
+    catch (err) {
+        return res.status(500).json({success:false, errorMessage: "Unable to find mapMetadata"})
+    } 
+
 }
 const saveMapEdits = async (req, res) => {
     

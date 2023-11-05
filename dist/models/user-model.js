@@ -6,7 +6,7 @@ const UserSchema = new Schema({
     email: { type: String, required: true },
     passwordHash: { type: String, required: true },
     posts: [{ type: ObjectId, ref: 'Post', default: [] }],
-    mapsMetdadata: [{ type: ObjectId, ref: 'MapMetadata', default: [] }],
+    mapsMetadata: [{ type: ObjectId, ref: 'MapMetadata', default: [] }],
     likedPosts: [{ type: ObjectId, ref: 'Post', default: [] }],
     untitledCount: { type: Number, default: 0 },
     duplicateCount: { type: Number, default: 0 },

@@ -9,20 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import { UserModel } from '../models/user-model.js'; // Import the User model and UserDocument
 import { PostModel } from '../models/post-model.js'; // Import the Post model and PostDocument
-function findUserById(userId) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const user = yield UserModel.findById(userId);
-            if (!user) {
-                return null;
-            }
-            return user;
-        }
-        catch (err) {
-            return null;
-        }
-    });
-}
+import { findUserById } from '../utils/utils.js';
 function extractPostCardInfo(posts) {
     const extractedPosts = posts.map(post => {
         const { title, owner, ownerUserName, thumbnail, likes, forks, tags, mapMetadata, _id, createdAt, updatedAt } = post;

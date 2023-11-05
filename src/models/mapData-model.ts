@@ -6,19 +6,21 @@ const mapDataSchema = new Schema<MapDataDocument>({
   proprietaryJSON: {
     templateType: { type: String, required: true },
     legend: {
-      title: { type: String },
-      keyValueLabels: [
+      title: { type: String, default: "Legend Title"},
+      keyValueLabels: {type: [
         {
           key: { type: String },
           value: { type: String },
         },
-      ],
+        ],
+        default: []
+      }
     },
     gradientData: {
-      primaryColor: { type: Number },
-      minScale: { type: Number },
-      maxScale: { type: Number },
-      sections: { type: Number },
+      primaryColor: { type: Number, default: 0x00FF00},
+      minScale: { type: Number, default: 0},
+      maxScale: { type: Number, default: 100},
+      sections: { type: Number, default: 4},
     },
   },
 }, { timestamps: true });
@@ -36,10 +38,10 @@ interface MapDataDocument extends Document {
       }>;
     };
     gradientData: {
-      primaryColor: number | undefined;
-      minScale: number | undefined;
-      maxScale: number | undefined;
-      sections: number | undefined;
+      primaryColor: number;
+      minScale: number;
+      maxScale: number;
+      sections: number;
     };
   };
 }

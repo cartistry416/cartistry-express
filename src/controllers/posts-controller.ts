@@ -1,21 +1,9 @@
 import { UserModel, UserDocument } from '../models/user-model.js'; // Import the User model and UserDocument
 import { PostModel, PostDocument } from '../models/post-model.js'; // Import the Post model and PostDocument
 import { MapMetadataModel, MapMetadataDocument } from '../models/mapMetadata-model.js'; // Import the MapMetadata model and MapMetadataDocument
-import { Types } from 'mongoose';
-import { title } from 'process';
-import { isInt16Array } from 'util/types';
+import { findUserById } from '../utils/utils.js';
 
-async function findUserById(userId: string): Promise<UserDocument | null> {
-  try {
-    const user = await UserModel.findById(userId)
-    if (!user) {
-      return null;
-    }
-    return user;
-  } catch (err) {
-    return null;
-  }
-}
+
 
 function extractPostCardInfo(posts: PostDocument[]) {
     const extractedPosts =  posts.map(post => {

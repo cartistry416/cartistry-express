@@ -9,7 +9,7 @@ const UserSchema = new Schema<UserDocument>({
     email: { type: String, required: true },
     passwordHash: { type: String, required: true },
     posts: [{ type: ObjectId, ref: 'Post', default: [] }],
-    mapsMetdadata: [{ type: ObjectId, ref: 'MapMetadata', default: [] }],
+    mapsMetadata: [{ type: ObjectId, ref: 'MapMetadata', default: [] }],
     likedPosts: [{ type: ObjectId, ref: 'Post', default: [] }],
     untitledCount: { type: Number, default: 0 },
     duplicateCount: { type: Number, default: 0 },
@@ -22,7 +22,7 @@ interface UserDocument extends Document {
     email: string;
     passwordHash: string;
     posts: mongoose.Schema.Types.ObjectId[];
-    mapsMetdadata: mongoose.Schema.Types.ObjectId[];
+    mapsMetadata: mongoose.Schema.Types.ObjectId[];
     likedPosts: mongoose.Schema.Types.ObjectId[];
     untitledCount: number;
     duplicateCount: number;

@@ -1,30 +1,26 @@
 import mongoose, { Document, Model, Types } from 'mongoose';
 import { UserDocument } from './user-model.js'; 
 import { MapDataDocument } from './mapData-model.js'; 
-// Define the MapMetadata mongoose.Schema
 const mapMetadata = new mongoose.Schema<MapMetadataDocument>({
   title: { type: String, required: true },
-  owner: { type: Types.ObjectId, ref: 'User', required: true },
+  owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   thumbnail: {
     imageData: Buffer,
     contentType: String,
-    required: true,
   },
-  lastEdited: { type: Date },
   ownerFavorited: { type: Boolean, default: false },
   forks: { type: Number, default: 0 },
-  mapData: { type: Types.ObjectId, ref: 'MapData', required: true },
+  mapData: { type: mongoose.Schema.Types.ObjectId, ref: 'MapData', required: true },
   isPrivated: { type: Boolean, default: true },
 }, { timestamps: true });
 
 interface MapMetadataDocument extends Document {
   title: string;
-  owner: Types.ObjectId; 
+  owner: mongoose.Schema.Types.ObjectId; 
   thumbnail: Image;
-  lastEdited: Date;
   ownerFavorited: boolean;
   forks: number;
-  mapData: Types.ObjectId; 
+  mapData: mongoose.Schema.Types.ObjectId; 
   isPrivated: boolean;
 }
 
