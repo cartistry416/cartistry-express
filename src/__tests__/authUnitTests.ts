@@ -22,12 +22,12 @@ describe('AuthController tests', () => {
         server.close()
     })
 
-    describe('POST /auth/register', () => {
+    describe('registering', () => {
 
         it('example request to register a mocked user', async () => {
             const res = await req.post('/auth/register').send({
-                userName: "DummyUser123",
-                email: "DummyUser123@stonybrook.edu",
+                userName: "messi",
+                email: "messi@stonybrook.edu",
                 password:"PASsWord1234!",
                 passwordVerify: "PASsWord1234!"
             })
@@ -41,7 +41,7 @@ describe('AuthController tests', () => {
         let cookies = null;
         it ('example request to login the newly created registered user', async () => {
             const res = await req.post('/auth/login').send({
-                email: "DummyUser123@stonybrook.edu",
+                email: "messi@stonybrook.edu",
                 password:"PASsWord1234!"
             })
             expect(res.status).toBe(200)
