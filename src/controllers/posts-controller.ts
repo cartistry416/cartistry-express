@@ -102,14 +102,8 @@ const getPost = async (req , res) => {
 }
 
 const getMostRecentPosts = async (req, res) => {
-    const body = req.body;
-    if (!body || !body.limit) {
-        return res.status(400).json({
-            success: false,
-            error: 'You must provide a body with a limit',
-        })
-    }
-    const limit = body.limit
+    const limit = Number.parseInt(req.query.limit)
+    // console.log(limit)
     try {
         const posts = await PostModel.aggregate([
             {$sort: {createdAt: -1}},
@@ -118,21 +112,14 @@ const getMostRecentPosts = async (req, res) => {
         return res.status(200).json({success: true, posts})
     }
     catch (err) {
+        console.error(err)
         return res.status(500).json({success: false, errorMessage: `Unable to retrieve ${limit} most recent posts`})
     }
 }
 
 const getMostLikedPosts = async (req, res) => {
-    const body = req.body;
-    if (!body || !body.limit) {
-        return res.status(400).json({
-            success: false,
-            error: 'You must provide a body with a limit',
-        })
-    }
-
-    const limit = body.limit
-
+    const limit = Number.parseInt(req.query.limit)
+    //console.log(limit)
     try {
         const posts = await PostModel.aggregate([
             {$sort: {likes: -1}},
@@ -141,6 +128,7 @@ const getMostLikedPosts = async (req, res) => {
         return res.status(200).json({success: true, posts: extractPostCardInfo(posts)})
     }
     catch (err) {
+        console.error(err)
         return res.status(500).json({success: false, errorMessage: `Unable to retrieve ${limit} most recent posts`})
     }
 }

@@ -105,7 +105,7 @@ describe('PostsController tests', () => {
         })
 
         it ('example request to get most recent posts. Note that postId2 is first because it is most recent', async () => {
-            res = await req.get('/posts-api/posts/most-recent').send({limit: 2})
+            res = await req.get('/posts-api/posts/most-recent/?limit=2')
             expect(res.status).toBe(200)
             const posts = res.body.posts
             expect(posts.length).toBe(2)
@@ -117,7 +117,7 @@ describe('PostsController tests', () => {
 
             res = await req.put(`/posts-api/posts/${postId2}/likes`).set('Cookie', token)
             expect(res.status).toBe(200)
-            res = await req.get('/posts-api/posts/most-liked').send({limit: 2})
+            res = await req.get('/posts-api/posts/most-liked/?limit=2')
             expect(res.status).toBe(200)
             const posts = res.body.posts
             expect(posts.length).toBe(2)
@@ -158,7 +158,7 @@ describe('PostsController tests', () => {
             expect(res.status).toBe(200)
             expect(res.body.posts.length).toBe(1)
 
-            res = await req.get(`/posts-api/posts/most-recent`).send({limit: 2})
+            res = await req.get(`/posts-api/posts/most-recent/?limit=2`)
             expect(res.status).toBe(200)
             expect(res.body.posts.length).toBe(1)
 
