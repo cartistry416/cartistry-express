@@ -15,9 +15,8 @@ const connectDB = async () => {
   try {
     let dbUrl = process.env.MONGODB_URI;
     if (process.env.NODE_ENV === 'test') {
-      // mongod = await MongoMemoryServer.create();
-      // dbUrl = mongod.getUri();
-      dbUrl = "mongodb+srv://cartistry:kKcrgro6VUyTCz5h@cluster0.9zgz9yx.mongodb.net/"
+      mongod = await MongoMemoryServer.create();
+      dbUrl = mongod.getUri();
     }
 
     const conn = await mongoose.connect(dbUrl, {

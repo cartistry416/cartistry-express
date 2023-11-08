@@ -26,7 +26,7 @@ describe('AuthController tests', () => {
         yield disconnectDB();
         server.close();
     }));
-    describe('POST /auth/register', () => {
+    describe('registering', () => {
         it('example request to register a mocked user', () => __awaiter(void 0, void 0, void 0, function* () {
             const res = yield req.post('/auth/register').send({
                 userName: "DummyUser123",
@@ -34,6 +34,7 @@ describe('AuthController tests', () => {
                 password: "PASsWord1234!",
                 passwordVerify: "PASsWord1234!"
             });
+            console.log(res.errorMessage);
             expect(res.status).toBe(200);
         }));
     });
@@ -57,6 +58,15 @@ describe('AuthController tests', () => {
         }));
         it('example request to logout the logged in user', () => __awaiter(void 0, void 0, void 0, function* () {
             const res = yield req.get('/auth/logout');
+            expect(res.status).toBe(200);
+        }));
+        it('dummy test case', () => __awaiter(void 0, void 0, void 0, function* () {
+            const res = yield req.post('/auth/register').send({
+                userName: "messi",
+                email: "messi@stonybrook.edu",
+                password: "PASsWord1234!",
+                passwordVerify: "PASsWord1234!"
+            });
             expect(res.status).toBe(200);
         }));
     });

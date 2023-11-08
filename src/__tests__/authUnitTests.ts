@@ -26,12 +26,12 @@ describe('AuthController tests', () => {
 
         it('example request to register a mocked user', async () => {
             const res = await req.post('/auth/register').send({
-                userName: "messi",
-                email: "messi@stonybrook.edu",
+                userName: "DummyUser123",
+                email: "DummyUser123@stonybrook.edu",
                 password:"PASsWord1234!",
                 passwordVerify: "PASsWord1234!"
             })
-            
+            console.log(res.errorMessage)
             expect(res.status).toBe(200)
         })
 
@@ -41,7 +41,7 @@ describe('AuthController tests', () => {
         let cookies = null;
         it ('example request to login the newly created registered user', async () => {
             const res = await req.post('/auth/login').send({
-                email: "messi@stonybrook.edu",
+                email: "DummyUser123@stonybrook.edu",
                 password:"PASsWord1234!"
             })
             expect(res.status).toBe(200)
@@ -62,6 +62,17 @@ describe('AuthController tests', () => {
             expect(res.status).toBe(200)
 
         })
+
+        it ('dummy test case', async () => {
+            const res = await req.post('/auth/register').send({
+                userName: "messi",
+                email: "messi@stonybrook.edu",
+                password:"PASsWord1234!",
+                passwordVerify: "PASsWord1234!"
+            })
+            expect(res.status).toBe(200)
+        })
+
     })
 
 })

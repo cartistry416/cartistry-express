@@ -16,6 +16,7 @@ dotenv.config();
 // https://medium.com/weekly-webtips/express-js-testing-mocking-mongodb-46c3797a201
 import { MongoMemoryServer } from 'mongodb-memory-server';
 let mongod = null;
+// comment for github actions
 const connectDB = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let dbUrl = process.env.MONGODB_URI;
