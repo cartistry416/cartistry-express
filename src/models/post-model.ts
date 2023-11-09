@@ -35,6 +35,7 @@ const postSchema = new mongoose.Schema<PostDocument>({
 interface PostDocument extends Document {
   title: string;
   owner: mongoose.Schema.Types.ObjectId; 
+  textContent: string;
   ownerUserName: string;
   thumbnail: Image;
   comments: Comment[];

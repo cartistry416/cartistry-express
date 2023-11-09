@@ -6,8 +6,6 @@ import { randomBytes } from 'crypto'
 import { bufferToZip } from '../utils/utils.js'
 import { promises as fs, stat } from 'fs'
 
-import * as gjv from 'geojson-validation'
-import { arrayBuffer } from 'stream/consumers'
 
 import path from 'path'
 
@@ -60,7 +58,7 @@ describe('MapsController tests', () => {
         server.close()
 
         try {
-            await fs.rmdir(testPath, { recursive: true })
+            await fs.rm(testPath, { recursive: true })
         
         }
         catch (err) {
@@ -128,6 +126,15 @@ describe('MapsController tests', () => {
             res = await req.put(`/maps-api/maps/${mapMetadataId}/update-privacy`).set('Cookie', token)
             expect(res.status).toBe(200)
             expect(res.body.isPrivated).toBe(false)
+            
+            res = await req.put(`/maps-api/maps/${mapMetadataId}/favorite`).set('Cookie', token)
+            expect(res.status).toBe(200)
+            expect(res.body.ownerFavorited).toBe(true)
+
+            const newTitle = "NEW TITLE"
+            res = await req.put(`/maps-api/maps/${mapMetadataId}/rename`).send({title: newTitle}).set('Cookie', token)
+            expect(res.status).toBe(200)
+            expect(res.body.title).toBe(newTitle)
 
             res = await req.get(`/maps-api/maps/public-map-metadata/${userId}`)
             expect(res.status).toBe(200)
@@ -138,7 +145,21 @@ describe('MapsController tests', () => {
             expect(res.body.mapMetadataIds.length).toBe(3)
         })
 
+        it('deletes original geoJSON map', async () => {
 
+
+            res = await req.delete(`/maps-api/maps/${mapMetadataId}`).set('Cookie', token)
+            expect(res.status).toBe(200)
+
+            res = await req.get(`/maps-api/maps/public-map-metadata/${userId}`)
+            expect(res.status).toBe(200)
+            expect(res.body.mapMetadataIds.length).toBe(0)
+
+            res = await req.get('/maps-api/maps/map-metadata').set('Cookie', token)
+            expect(res.status).toBe(200)
+            expect(res.body.mapMetadataIds.length).toBe(2)
+
+        })
 
     })
 

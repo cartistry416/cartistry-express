@@ -7,6 +7,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+import { PostModel } from '../models/post-model.js';
 import { MapMetadataModel } from '../models/mapMetadata-model.js';
 import { MapDataModel } from '../models/mapData-model.js';
 import mongoose from 'mongoose';
@@ -195,12 +196,105 @@ const updateMapPrivacy = (req, res) => __awaiter(void 0, void 0, void 0, functio
 const saveMapEdits = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 });
 const publishMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const body = req.body;
+    if (!body || !body.title || !body.textContent || !body.tags) {
+        return res.status(400).json({
+            success: false,
+            error: 'You must provide title and textContent and tags in body',
+        });
+    }
+    const user = yield findUserById(req.userId);
+    if (!user) {
+        return res.status(500).json({ success: false, errorMessage: "Unable to find user" });
+    }
+    const mapId = req.params.id;
+    try {
+        yield MapMetadataModel.findByIdAndUpdate(mapId, { isPrivated: false });
+        const post = yield PostModel.create({ owner: req.userId,
+            ownerUserName: user.userName,
+            title: body.title,
+            textContent: body.textContent,
+            mapMetadata: mapId,
+            tags: body.tags });
+        if (!post) {
+            return res.status(500).json({ success: false, errorMessage: "Unable to create post" });
+        }
+        return res.status(200).json({ success: true, postId: post._id });
+    }
+    catch (err) {
+        return res.status(500).json({ success: false, errorMessage: "Unable to create post because " + err });
+    }
 });
 const favoriteMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield findUserById(req.userId);
+    if (!user) {
+        return res.status(500).json({ success: false, errorMessage: "Unable to find user" });
+    }
+    const mapId = req.params.id;
+    try {
+        const mapMetaDataDocument = yield MapMetadataModel.findById(mapId);
+        if (mapMetaDataDocument.owner.toString() !== user._id.toString()) {
+            return res.status(401).json({ success: false, errorMessage: "Unauthorized to edit favorited for this map" });
+        }
+        mapMetaDataDocument.ownerFavorited = !mapMetaDataDocument.ownerFavorited;
+        yield mapMetaDataDocument.save();
+        return res.status(200).json({ success: true, ownerFavorited: mapMetaDataDocument.ownerFavorited });
+    }
+    catch (err) {
+        return res.status(500).json({ success: false, errorMessage: "Unable to edit favorited because " + err });
+    }
 });
 const renameMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const body = req.body;
+    if (!body || !body.title) {
+        return res.status(400).json({ success: false, errorMessage: "Must provide title in body" });
+    }
+    const user = yield findUserById(req.userId);
+    if (!user) {
+        return res.status(500).json({ success: false, errorMessage: "Unable to find user" });
+    }
+    const mapId = req.params.id;
+    try {
+        const mapMetaDataDocument = yield MapMetadataModel.findById(mapId);
+        if (mapMetaDataDocument.owner.toString() !== user._id.toString()) {
+            return res.status(401).json({ success: false, errorMessage: "Unauthorized to edit title for this map" });
+        }
+        mapMetaDataDocument.title = body.title;
+        yield mapMetaDataDocument.save();
+        return res.status(200).json({ success: true, title: mapMetaDataDocument.title });
+    }
+    catch (err) {
+        return res.status(500).json({ success: false, errorMessage: "Unable to edit title because " + err });
+    }
 });
 const deleteMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield findUserById(req.userId);
+    if (!user) {
+        return res.status(500).json({ success: false, errorMessage: "Unable to find user" });
+    }
+    try {
+        const mapMetaDataDocument = yield MapMetadataModel.findById(req.params.id);
+        if (mapMetaDataDocument.owner.toString() !== user._id.toString()) {
+            return res.status(401).json({ success: false, errorMessage: "Unauthorized to edit title for this map" });
+        }
+        const mapMetaDataDocumentId = mapMetaDataDocument._id.toString();
+        const mapDataDocumentId = mapMetaDataDocument.mapData;
+        const idx = user.mapsMetadata.findIndex(id => id.toString() === mapMetaDataDocumentId);
+        if (idx >= 0) {
+            user.mapsMetadata.splice(idx, 1);
+            user.markModified('mapsMetadata');
+            yield user.save();
+            yield mapMetaDataDocument.remove();
+            yield MapDataModel.findByIdAndRemove(mapDataDocumentId);
+            return res.status(200).json({ success: true });
+        }
+        else {
+            return res.status(500).json({ success: false, errorMessage: "Couldn't find mapsMetadataId on user" });
+        }
+    }
+    catch (err) {
+        return res.status(500).json({ success: false, errorMessage: "Unable to delete map because " + err });
+    }
 });
 const MapsController = {
     uploadMap,

@@ -228,24 +228,130 @@ const updateMapPrivacy = async (req, res) => {
     } 
 
 }
-const saveMapEdits = async (req, res) => {
+const saveMapEdits = async (req, res: Response) => {
     
 }
-const publishMap = async (req, res) => {
-    
+const publishMap = async (req, res: Response) => {
+
+    const body = req.body
+    if (!body || !body.title || !body.textContent || !body.tags) {
+        return res.status(400).json({
+            success: false,
+            error: 'You must provide title and textContent and tags in body',
+        })
+    }
+    const user = await findUserById(req.userId)
+
+    if (!user) {
+        return res.status(500).json({success: false, errorMessage: "Unable to find user"})
+    }
+    const mapId = req.params.id
+
+    try {
+        await MapMetadataModel.findByIdAndUpdate(mapId, {isPrivated: false})
+
+        const post = await PostModel.create({owner: req.userId, 
+                                            ownerUserName: user.userName, 
+                                            title: body.title, 
+                                            textContent: body.textContent, 
+                                            mapMetadata: mapId,
+                                            tags: body.tags})
+        if (!post) {
+            return res.status(500).json({ success: false, errorMessage: "Unable to create post"})
+        }
+        return res.status(200).json({success:true, postId: post._id})
+    }
+    catch (err) {
+        return res.status(500).json({ success: false, errorMessage: "Unable to create post because " + err})
+    }
+
+
 }
 
+const favoriteMap = async (req, res: Response) => {
+    const user = await findUserById(req.userId)
 
+    if (!user) {
+        return res.status(500).json({success: false, errorMessage: "Unable to find user"})
+    }
+    const mapId = req.params.id
 
-const favoriteMap = async (req, res) => {
-    
+    try {
+        const mapMetaDataDocument = await MapMetadataModel.findById(mapId)
+        if(mapMetaDataDocument.owner.toString() !== user._id.toString()) {
+            return res.status(401).json({success:false, errorMessage:"Unauthorized to edit favorited for this map"})
+        }
+        mapMetaDataDocument.ownerFavorited = !mapMetaDataDocument.ownerFavorited
+        await mapMetaDataDocument.save()
+        return res.status(200).json({success: true, ownerFavorited: mapMetaDataDocument.ownerFavorited})
+    }
+    catch (err) {
+        return res.status(500).json({success: false, errorMessage: "Unable to edit favorited because " + err})
+    }
 }
-const renameMap = async (req, res) => {
-    
+
+const renameMap = async (req, res: Response) => {
+
+    const body = req.body
+    if (!body || !body.title) {
+        return res.status(400).json({success: false, errorMessage: "Must provide title in body"})
+    }
+
+    const user = await findUserById(req.userId)
+
+    if (!user) {
+        return res.status(500).json({success: false, errorMessage: "Unable to find user"})
+    }
+    const mapId = req.params.id
+
+    try {
+        const mapMetaDataDocument = await MapMetadataModel.findById(mapId)
+        if(mapMetaDataDocument.owner.toString() !== user._id.toString()) {
+            return res.status(401).json({success:false, errorMessage:"Unauthorized to edit title for this map"})
+        }
+        mapMetaDataDocument.title = body.title
+        await mapMetaDataDocument.save()
+        return res.status(200).json({success: true, title: mapMetaDataDocument.title})
+    }
+    catch (err) {
+        return res.status(500).json({success: false, errorMessage: "Unable to edit title because " + err})
+    }
+
 }
 
-const deleteMap = async (req, res) => {
-    
+const deleteMap = async (req, res: Response) => {
+    const user = await findUserById(req.userId)
+
+    if (!user) {
+        return res.status(500).json({success: false, errorMessage: "Unable to find user"})
+    }
+
+    try {
+        const mapMetaDataDocument = await MapMetadataModel.findById(req.params.id)
+        if(mapMetaDataDocument.owner.toString() !== user._id.toString()) {
+            return res.status(401).json({success:false, errorMessage:"Unauthorized to edit title for this map"})
+        }
+
+        const mapMetaDataDocumentId: string = mapMetaDataDocument._id.toString()
+        const mapDataDocumentId = mapMetaDataDocument.mapData
+
+        const idx = user.mapsMetadata.findIndex(id => id.toString() === mapMetaDataDocumentId)
+
+        if (idx >= 0) {
+            user.mapsMetadata.splice(idx, 1)
+            user.markModified('mapsMetadata')
+            await user.save()
+            await mapMetaDataDocument.remove()
+            await MapDataModel.findByIdAndRemove(mapDataDocumentId)
+            return res.status(200).json({success:true})
+        }
+        else {
+            return res.status(500).json({success: false, errorMessage: "Couldn't find mapsMetadataId on user"})
+        }
+    }
+    catch (err) {
+        return res.status(500).json({success: false, errorMessage: "Unable to delete map because " + err})
+    }
 }
 
 

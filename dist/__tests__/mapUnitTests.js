@@ -57,7 +57,7 @@ describe('MapsController tests', () => {
         yield disconnectDB();
         server.close();
         try {
-            yield fs.rmdir(testPath, { recursive: true });
+            yield fs.rm(testPath, { recursive: true });
         }
         catch (err) {
             console.error("Unable to remove temp directory used for unit tests: " + err);
@@ -110,12 +110,29 @@ describe('MapsController tests', () => {
             res = yield req.put(`/maps-api/maps/${mapMetadataId}/update-privacy`).set('Cookie', token);
             expect(res.status).toBe(200);
             expect(res.body.isPrivated).toBe(false);
+            res = yield req.put(`/maps-api/maps/${mapMetadataId}/favorite`).set('Cookie', token);
+            expect(res.status).toBe(200);
+            expect(res.body.ownerFavorited).toBe(true);
+            const newTitle = "NEW TITLE";
+            res = yield req.put(`/maps-api/maps/${mapMetadataId}/rename`).send({ title: newTitle }).set('Cookie', token);
+            expect(res.status).toBe(200);
+            expect(res.body.title).toBe(newTitle);
             res = yield req.get(`/maps-api/maps/public-map-metadata/${userId}`);
             expect(res.status).toBe(200);
             expect(res.body.mapMetadataIds.length).toBe(1);
             res = yield req.get('/maps-api/maps/map-metadata').set('Cookie', token);
             expect(res.status).toBe(200);
             expect(res.body.mapMetadataIds.length).toBe(3);
+        }));
+        it('deletes original geoJSON map', () => __awaiter(void 0, void 0, void 0, function* () {
+            res = yield req.delete(`/maps-api/maps/${mapMetadataId}`).set('Cookie', token);
+            expect(res.status).toBe(200);
+            res = yield req.get(`/maps-api/maps/public-map-metadata/${userId}`);
+            expect(res.status).toBe(200);
+            expect(res.body.mapMetadataIds.length).toBe(0);
+            res = yield req.get('/maps-api/maps/map-metadata').set('Cookie', token);
+            expect(res.status).toBe(200);
+            expect(res.body.mapMetadataIds.length).toBe(2);
         }));
     });
 });
