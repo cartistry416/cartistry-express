@@ -146,8 +146,6 @@ describe('MapsController tests', () => {
         })
 
         it('deletes original geoJSON map', async () => {
-
-
             res = await req.delete(`/maps-api/maps/${mapMetadataId}`).set('Cookie', token)
             expect(res.status).toBe(200)
 
@@ -158,7 +156,6 @@ describe('MapsController tests', () => {
             res = await req.get('/maps-api/maps/map-metadata').set('Cookie', token)
             expect(res.status).toBe(200)
             expect(res.body.mapMetadataIds.length).toBe(2)
-
         })
 
     })

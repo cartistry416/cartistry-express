@@ -9,14 +9,23 @@ import { bufferToZip, zipToDisk, diskToZipBuffer} from '../utils/utils.js'
 import { findUserById } from '../utils/utils.js'
 
 import path from 'path'
+const __dirname = path.resolve();
+const geoJSONZipPath = path.join(__dirname, `/GeoJSONZipFiles${process.env.NODE_ENV === 'test' ? 'Test': ""}`)
+
 
 import {Request, Response} from 'express'
 const uploadMap = async (req, res) => {
 
     const body = req.body
-    if (!body || !req.file || !body.fileExtension) {
-        return res.status(400).json({sucess: false, errorMessage: "Body is missing file or file extension"})
+    // console.log(body)
+    if (!body|| !body.fileExtension) {
+        return res.status(400).json({sucess: false, errorMessage: "Body is missing file extension"})
     }
+
+    if (!req.file) {
+        return res.status(400).json({sucess: false, errorMessage: "No file attached"})
+    }
+
     if (!body.title) {
         return res.status(400).json({sucess: false, errorMessage: "Body is missing title"})
     }
@@ -52,10 +61,11 @@ const uploadMap = async (req, res) => {
 
     try {
         const mapMetadataDocumentId = mongoose.Types.ObjectId()
-        const geoJSONZipPath = path.join(__dirname, `../../GeoJSONZipFiles${process.env.NODE_ENV === 'test' ? 'Test': ""}/${mapMetadataDocumentId.toString()}`)
-        await zipToDisk(geoJSONZipPath, geoJSONZip)
+        const pathToWrite = `${geoJSONZipPath}/${mapMetadataDocumentId.toString()}`
+        await zipToDisk(pathToWrite, geoJSONZip)
+        console.log("successfully wrote geojson zip to disk")
 
-        const mapDataDocument = await MapDataModel.create({geoJSONZipPath, proprietaryJSON: {templateType: body.templateType}})
+        const mapDataDocument = await MapDataModel.create({geoJSONZipPath: pathToWrite, proprietaryJSON: {templateType: body.templateType}})
         const mapMetadataDocument = await MapMetadataModel.create({_id: mapMetadataDocumentId, title: body.title, owner: user._id, mapData: mapDataDocument._id})
         user.mapsMetadata.push(mapMetadataDocument._id)
         user.markModified('mapsMetadata')
@@ -63,7 +73,7 @@ const uploadMap = async (req, res) => {
         return res.status(200).json({success: true, mapMetadataId: mapMetadataDocument._id, mapDataId: mapDataDocument._id})
     }
     catch (err) {
-        return res.status(500).json({successs: false, errorMessage: "A lot of possible things could have went wrong"})
+        return res.status(500).json({successs: false, errorMessage: "A lot of possible things could have went wrong: " + err})
     }
 }
 
@@ -97,7 +107,7 @@ const forkMap = async (req, res) => {
         cloneMapMetaData.mapData = cloneMapData._id
 
 
-        const cloneGeoJSONZipPath = path.join(__dirname, `../../GeoJSONZipFiles${process.env.NODE_ENV === 'test' ? 'Test': ""}/${cloneMapMetaData._id.toString()}`)
+        const cloneGeoJSONZipPath = `${geoJSONZipPath}/${cloneMapMetaData._id.toString()}`
         cloneMapData.geoJSONZipPath = cloneGeoJSONZipPath
 
         await zipToDisk(cloneGeoJSONZipPath, geoJSONZip)

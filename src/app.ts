@@ -20,27 +20,32 @@ import {mapsRouter} from './routes/maps-router.js'
 
 import {connectDB, disconnectDB} from './db/db.js'
 import mongoose from 'mongoose'
-
+import { randomBytes } from 'crypto'
 //const mapsRouter = require('./routes/maps-router.ts')
 
 // CREATE OUR SERVER
 dotenv.config()
 const PORT = process.env.PORT || 4000;
 const app = express()
-
+if (!process.env.JWT_SECRET) {
+    process.env.JWT_SECRET = randomBytes(32).toString('hex')
+    process.env.JWT_EXPIRATION_TIME="86400"
+}
 // SETUP THE MIDDLEWARE
 app.use(express.urlencoded({ extended: true }))
+
+const frontEndURL = process.env.FRONTEND_URL
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'https://main.d2cpsfn3mxqyu2.amplifyapp.com%27/');
+    res.header('Access-Control-Allow-Origin', frontEndURL);
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     res.header('Access-Control-Allow-Credentials', 'true');
     next();
 });
 app.use(cors({
-    origin: ["https://main.d2cpsfn3mxqyu2.amplifyapp.com"],
+    origin: [frontEndURL],
     credentials: true
-})) //CartistryExpressServer-env-1.eba-fmapfype.us-east-1.elasticbeanstalk.com 
+}))
 app.use(express.json())
 app.use(cookieParser())
 

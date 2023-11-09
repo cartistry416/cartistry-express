@@ -8,7 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import shp from 'shpjs';
-import * as tj from "@mapbox/togeojson";
+import toGeoJSON from "@mapbox/togeojson";
 import * as xmldom from 'xmldom';
 const DOMParser = xmldom.DOMParser;
 import AdmZip from 'adm-zip';
@@ -45,7 +45,7 @@ class KMLFileReader {
                 throw new Error('Expected one file in the zip archive.');
             }
             const zipEntry = zipEntries[0].getData().toString();
-            const geoJSON = tj.kml(this.domParser.parseFromString(zipEntry, 'text/xml'));
+            const geoJSON = toGeoJSON.kml(this.domParser.parseFromString(zipEntry, 'text/xml'));
             return Buffer.from(JSON.stringify(geoJSON));
         });
     }
