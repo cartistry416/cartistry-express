@@ -210,7 +210,7 @@ const deletePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         if (!result) {
             return res.status(500).json({ success: false, errorMessage: "Unable to remove deleted posts from all users likes" });
         }
-        console.log(`Removed post from ${result.nModified} users likes`);
+        //console.log(`Removed post from ${result.nModified} users likes`)
     }
     catch (err) {
         return res.status(500).json({ success: false, errorMessage: "Unable to remove deleted posts from all users likes" });

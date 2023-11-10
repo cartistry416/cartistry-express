@@ -12,11 +12,8 @@ import { MapMetadataModel } from '../models/mapMetadata-model.js';
 import { MapDataModel } from '../models/mapData-model.js';
 import mongoose from 'mongoose';
 import { MapFileParserFactory } from '../utils/MapFileParser.js';
-import { bufferToZip, zipToDisk, diskToZipBuffer } from '../utils/utils.js';
+import { bufferToZip, zipToGridFS, gridFSToZip } from '../utils/utils.js';
 import { findUserById } from '../utils/utils.js';
-import path from 'path';
-const __dirname = path.resolve();
-const geoJSONZipPath = path.join(__dirname, `/GeoJSONZipFiles${process.env.NODE_ENV === 'test' ? 'Test' : ""}`);
 const uploadMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const body = req.body;
     // console.log(body)
@@ -49,8 +46,7 @@ const uploadMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         return res.status(400).json({ sucess: false, errorMessage: "Unsupported file extension!" });
     }
     try {
-        const zipFileBuffer = req.file.buffer;
-        const geoJSON = yield mapFileParser.parse(zipFileBuffer);
+        const geoJSON = yield mapFileParser.parse(req.file.buffer);
         geoJSONZip = yield bufferToZip(geoJSON);
     }
     catch (err) {
@@ -58,10 +54,9 @@ const uploadMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
     try {
         const mapMetadataDocumentId = mongoose.Types.ObjectId();
-        const pathToWrite = `${geoJSONZipPath}/${mapMetadataDocumentId.toString()}`;
-        yield zipToDisk(pathToWrite, geoJSONZip);
-        console.log("successfully wrote geojson zip to disk");
-        const mapDataDocument = yield MapDataModel.create({ geoJSONZipPath: pathToWrite, proprietaryJSON: { templateType: body.templateType } });
+        const geoJSONZipId = mongoose.Types.ObjectId().toString();
+        yield zipToGridFS(geoJSONZipId, geoJSONZip);
+        const mapDataDocument = yield MapDataModel.create({ geoJSONZipId, proprietaryJSON: { templateType: body.templateType } });
         const mapMetadataDocument = yield MapMetadataModel.create({ _id: mapMetadataDocumentId, title: body.title, owner: user._id, mapData: mapDataDocument._id });
         user.mapsMetadata.push(mapMetadataDocument._id);
         user.markModified('mapsMetadata');
@@ -84,7 +79,7 @@ const forkMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         }
         let originalMapDataId = originalMapMetaDataDocument.mapData.toString();
         const originalMapDataDocument = yield MapDataModel.findById(originalMapDataId);
-        const geoJSONZip = yield diskToZipBuffer(originalMapDataDocument.geoJSONZipPath);
+        const geoJSONZip = yield gridFSToZip(originalMapDataDocument.geoJSONZipId.toString());
         if (!originalMapDataDocument) {
             return res.status(404).json({ success: false, errorMessage: "Unable to find map data via id on mapMetadata" });
         }
@@ -94,9 +89,9 @@ const forkMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const cloneMapData = originalMapDataDocument;
         cloneMapData._id = mongoose.Types.ObjectId();
         cloneMapMetaData.mapData = cloneMapData._id;
-        const cloneGeoJSONZipPath = `${geoJSONZipPath}/${cloneMapMetaData._id.toString()}`;
-        cloneMapData.geoJSONZipPath = cloneGeoJSONZipPath;
-        yield zipToDisk(cloneGeoJSONZipPath, geoJSONZip);
+        const cloneGeoJSONZipId = mongoose.Types.ObjectId().toString();
+        cloneMapData.geoJSONZipId = cloneGeoJSONZipId;
+        yield zipToGridFS(cloneGeoJSONZipId, geoJSONZip);
         cloneMapData.isNew = true;
         cloneMapMetaData.isNew = true;
         yield cloneMapData.save();
@@ -109,14 +104,15 @@ const forkMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         return res.status(200).json({ success: true });
     }
     catch (err) {
-        return res.status(500).json({ success: false, errorMessage: "Unable to create or save something to the database OR read/write to/from local disk " + err });
+        return res.status(500).json({ success: false, errorMessage: "Unable to create or save something to the database OR read/write to/from gridFS " + err });
     }
 });
 const exportMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const mapMetadataDocument = yield MapMetadataModel.findById(req.params.id);
         const mapDataDocument = yield MapDataModel.findById(mapMetadataDocument.mapData);
-        const geoJSONZip = yield diskToZipBuffer(mapDataDocument.geoJSONZipPath);
+        const geoJSONZip = yield gridFSToZip(mapDataDocument.geoJSONZipId);
+        res.setHeader('Content-Type', 'application/octet-stream');
         res.status(200).send(geoJSONZip);
     }
     catch (err) {
@@ -148,7 +144,7 @@ const getPublicMapMetadataOwnedByUser = (req, res) => __awaiter(void 0, void 0, 
             publicMapMetadataIds.push(mapMetadataId.toString());
         }
     }
-    console.log(publicMapMetadataIds.length);
+    //console.log(publicMapMetadataIds.length)
     return res.status(200).json({ success: true, mapMetadataIds: publicMapMetadataIds });
 });
 const getMapData = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -161,7 +157,7 @@ const getMapData = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         return res.status(404).json({ success: false, errorMessage: "Unable to find mapMetadata" });
     }
     if (mapMetadataDocument.owner.toString() !== user._id.toString() && mapMetadataDocument.isPrivated) {
-        console.log(`${mapMetadataDocument.owner} !== ${user._id}`);
+        console.error(`${mapMetadataDocument.owner} !== ${user._id}`);
         return res.status(401).json({ success: false, errorMessage: "Not authorized to get this map data" });
     }
     const mapDataDocument = yield MapDataModel.findById(mapMetadataDocument.mapData);
@@ -169,13 +165,13 @@ const getMapData = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         return res.status(404).json({ success: false, errorMessage: "Unable to find map data" });
     }
     try {
-        const geoJSONZip = yield diskToZipBuffer(mapDataDocument.geoJSONZipPath);
+        const geoJSONZip = yield gridFSToZip(mapDataDocument.geoJSONZipId);
         res.setHeader('Content-Type', 'application/octet-stream');
         res.status(200).send(geoJSONZip);
     }
     catch (err) {
-        console.error("Unable to read zip file from disk: " + err);
-        return res.status(500).json({ success: false, errorMessage: "Unable to read zip file from disk" });
+        console.error("Unable to read zip file from gridfs: " + err);
+        return res.status(500).json({ success: false, errorMessage: "Unable to read zip file from gridfs" });
     }
 });
 const updateMapPrivacy = (req, res) => __awaiter(void 0, void 0, void 0, function* () {

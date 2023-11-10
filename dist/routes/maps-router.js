@@ -8,7 +8,6 @@
 import express from 'express';
 import { MapsController } from '../controllers/maps-controller.js';
 const mapsRouter = express.Router();
-// const auth = require('../auth/auth.ts')
 import auth from '../auth/auth.js';
 import multer from 'multer';
 const storage = multer.memoryStorage();

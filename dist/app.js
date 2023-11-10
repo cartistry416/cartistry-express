@@ -21,7 +21,6 @@ import { postsRouter } from './routes/posts-router.js';
 //const postsRouter = require('./routes/posts-router.ts')
 import { mapsRouter } from './routes/maps-router.js';
 import { connectDB } from './db/db.js';
-import mongoose from 'mongoose';
 import { randomBytes } from 'crypto';
 //const mapsRouter = require('./routes/maps-router.ts')
 // CREATE OUR SERVER
@@ -49,6 +48,13 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 // SETUP OUR OWN ROUTERS AS MIDDLEWARE
+if (process.env.NODE_ENV !== 'test') {
+    connectDB().then(conn => {
+        const db = conn.connection.db;
+        db.on('error', console.error.bind(console, 'MongoDB connection error:'));
+    });
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
 app.use('/auth', authRouter);
 app.use('/posts-api', postsRouter);
 app.use('/maps-api', mapsRouter);
@@ -58,11 +64,4 @@ app.get('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 // INITIALIZE OUR DATABASE OBJECT
 // db.on('error', console.error.bind(console, 'MongoDB connection error:'))
 // PUT THE SERVER IN LISTENING MODE
-if (process.env.NODE_ENV !== 'test') {
-    connectDB().then(() => {
-        const db = mongoose.connection;
-        db.on('error', console.error.bind(console, 'MongoDB connection error:'));
-    });
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-}
 export { app };

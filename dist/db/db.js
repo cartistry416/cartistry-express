@@ -16,7 +16,7 @@ dotenv.config();
 // https://medium.com/weekly-webtips/express-js-testing-mocking-mongodb-46c3797a201
 import { MongoMemoryServer } from 'mongodb-memory-server';
 let mongod = null;
-// comment for github actions
+let gfs = null;
 const connectDB = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let dbUrl = process.env.MONGODB_URI;
@@ -30,6 +30,11 @@ const connectDB = () => __awaiter(void 0, void 0, void 0, function* () {
             useFindAndModify: false,
         });
         console.log(`MongoDB connected: ${conn.connection.host}`);
+        gfs = new mongoose.mongo.GridFSBucket(conn.connection.db, {
+            bucketName: "mapZipFileUploads"
+        });
+        console.log(gfs);
+        return conn;
     }
     catch (err) {
         console.log(err);
@@ -48,7 +53,7 @@ const disconnectDB = () => __awaiter(void 0, void 0, void 0, function* () {
         process.exit(1);
     }
 });
-export { connectDB, disconnectDB };
+export { connectDB, disconnectDB, gfs };
 // mongoose
 //     .connect(process.env.DB_CONNECT, { useNewUrlParser: true })
 //     .catch(e => {

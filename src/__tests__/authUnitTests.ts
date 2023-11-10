@@ -31,7 +31,7 @@ describe('AuthController tests', () => {
                 password:"PASsWord1234!",
                 passwordVerify: "PASsWord1234!"
             })
-            console.log(res.errorMessage)
+            //console.log(res.errorMessage)
             expect(res.status).toBe(200)
         })
 

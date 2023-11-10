@@ -5,15 +5,16 @@ import { MapDataModel, MapDataDocument } from '../models/mapData-model.js'
 
 import mongoose from 'mongoose'
 import {MapFileParserFactory} from '../utils/MapFileParser.js'
-import { bufferToZip, zipToDisk, diskToZipBuffer} from '../utils/utils.js'
+import { bufferToZip, zipToGridFS, gridFSToZip} from '../utils/utils.js'
 import { findUserById } from '../utils/utils.js'
 
-import path from 'path'
-const __dirname = path.resolve();
-const geoJSONZipPath = path.join(__dirname, `/GeoJSONZipFiles${process.env.NODE_ENV === 'test' ? 'Test': ""}`)
-
+// import path from 'path'
+// const __dirname = path.resolve();
+// const geoJSONZipPath = path.join(__dirname, `/GeoJSONZipFiles${process.env.NODE_ENV === 'test' ? 'Test': ""}`)
 
 import {Request, Response} from 'express'
+
+
 const uploadMap = async (req, res) => {
 
     const body = req.body
@@ -51,8 +52,7 @@ const uploadMap = async (req, res) => {
         return res.status(400).json({sucess: false, errorMessage: "Unsupported file extension!"})
     }
     try {
-        const zipFileBuffer = req.file.buffer
-        const geoJSON: Buffer = await mapFileParser.parse(zipFileBuffer)
+        const geoJSON: Buffer = await mapFileParser.parse(req.file.buffer)
         geoJSONZip = await bufferToZip(geoJSON)
     }
     catch (err) {
@@ -61,11 +61,10 @@ const uploadMap = async (req, res) => {
 
     try {
         const mapMetadataDocumentId = mongoose.Types.ObjectId()
-        const pathToWrite = `${geoJSONZipPath}/${mapMetadataDocumentId.toString()}`
-        await zipToDisk(pathToWrite, geoJSONZip)
-        console.log("successfully wrote geojson zip to disk")
-
-        const mapDataDocument = await MapDataModel.create({geoJSONZipPath: pathToWrite, proprietaryJSON: {templateType: body.templateType}})
+        const geoJSONZipId = mongoose.Types.ObjectId().toString()
+        await zipToGridFS(geoJSONZipId, geoJSONZip) 
+        
+        const mapDataDocument = await MapDataModel.create({geoJSONZipId, proprietaryJSON: {templateType: body.templateType}})
         const mapMetadataDocument = await MapMetadataModel.create({_id: mapMetadataDocumentId, title: body.title, owner: user._id, mapData: mapDataDocument._id})
         user.mapsMetadata.push(mapMetadataDocument._id)
         user.markModified('mapsMetadata')
@@ -93,7 +92,7 @@ const forkMap = async (req, res) => {
         let originalMapDataId = originalMapMetaDataDocument.mapData.toString()
         const originalMapDataDocument = await MapDataModel.findById(originalMapDataId)
         
-        const geoJSONZip = await diskToZipBuffer(originalMapDataDocument.geoJSONZipPath)
+        const geoJSONZip: Buffer = await gridFSToZip(originalMapDataDocument.geoJSONZipId.toString())
         if(!originalMapDataDocument) {
             return res.status(404).json({success: false, errorMessage: "Unable to find map data via id on mapMetadata"})
         }
@@ -107,10 +106,9 @@ const forkMap = async (req, res) => {
         cloneMapMetaData.mapData = cloneMapData._id
 
 
-        const cloneGeoJSONZipPath = `${geoJSONZipPath}/${cloneMapMetaData._id.toString()}`
-        cloneMapData.geoJSONZipPath = cloneGeoJSONZipPath
-
-        await zipToDisk(cloneGeoJSONZipPath, geoJSONZip)
+        const cloneGeoJSONZipId = mongoose.Types.ObjectId().toString()
+        cloneMapData.geoJSONZipId = cloneGeoJSONZipId
+        await zipToGridFS(cloneGeoJSONZipId, geoJSONZip)
 
 
         cloneMapData.isNew = true
@@ -130,7 +128,7 @@ const forkMap = async (req, res) => {
         return res.status(200).json({success: true})
     }
     catch(err) {
-        return res.status(500).json({success: false, errorMessage: "Unable to create or save something to the database OR read/write to/from local disk " + err})
+        return res.status(500).json({success: false, errorMessage: "Unable to create or save something to the database OR read/write to/from gridFS " + err})
     }
 
 
@@ -143,9 +141,8 @@ const exportMap = async (req, res) => {
     try {
         const mapMetadataDocument = await MapMetadataModel.findById(req.params.id)
         const mapDataDocument = await MapDataModel.findById(mapMetadataDocument.mapData)
-        const geoJSONZip = await diskToZipBuffer(mapDataDocument.geoJSONZipPath)
-
-
+        const geoJSONZip = await gridFSToZip(mapDataDocument.geoJSONZipId)
+        res.setHeader('Content-Type', 'application/octet-stream')
         res.status(200).send(geoJSONZip)
     }
     catch (err) {
@@ -179,7 +176,7 @@ const getPublicMapMetadataOwnedByUser = async (req, res) => {
             publicMapMetadataIds.push(mapMetadataId.toString())
         }
     }
-    console.log(publicMapMetadataIds.length)
+    //console.log(publicMapMetadataIds.length)
     return res.status(200).json({success: true, mapMetadataIds: publicMapMetadataIds})
 
 }
@@ -194,7 +191,7 @@ const getMapData = async (req, res: Response) => {
         return res.status(404).json({success:false, errorMessage: "Unable to find mapMetadata"})
     }
     if (mapMetadataDocument.owner.toString() !== user._id.toString() && mapMetadataDocument.isPrivated) {
-        console.log(`${mapMetadataDocument.owner } !== ${user._id}`)
+        console.error(`${mapMetadataDocument.owner } !== ${user._id}`)
         return res.status(401).json({success:false, errorMessage: "Not authorized to get this map data"})
     }
     const mapDataDocument = await MapDataModel.findById(mapMetadataDocument.mapData)
@@ -204,13 +201,13 @@ const getMapData = async (req, res: Response) => {
     }
 
     try {
-        const geoJSONZip = await diskToZipBuffer(mapDataDocument.geoJSONZipPath)
+        const geoJSONZip = await gridFSToZip(mapDataDocument.geoJSONZipId)
         res.setHeader('Content-Type', 'application/octet-stream')
         res.status(200).send(geoJSONZip)
     }
     catch (err) {
-        console.error("Unable to read zip file from disk: " + err)
-        return res.status(500).json({success: false, errorMessage: "Unable to read zip file from disk"})
+        console.error("Unable to read zip file from gridfs: " + err)
+        return res.status(500).json({success: false, errorMessage: "Unable to read zip file from gridfs"})
     }
 }
 const updateMapPrivacy = async (req, res) => {

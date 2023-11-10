@@ -1,8 +1,8 @@
 
 import archiver from 'archiver';
 import {UserModel, UserDocument} from '../models/user-model.js'
-
 import { promises as fs } from 'fs'
+import {gfs} from '../db/db.js'
 
 async function findUserById(userId: string): Promise<UserDocument | null> {
   try {
@@ -56,12 +56,43 @@ async function zipToDisk(path: string, data: Buffer): Promise<Boolean> {
   }
 }
 
-async function diskToZipBuffer(path): Promise<Buffer> {
+async function diskToZipBuffer(path: string): Promise<Buffer> {
   return await fs.readFile(path)
+}
+
+
+async function zipToGridFS(id:string, data: Buffer): Promise<void> {
+  const writeStream = gfs.openUploadStreamWithId(id, `geoJSON_${id}.zip`, {contentType:"zip"});
+  writeStream.end(data);
+  return new Promise<void>((resolve, reject) => {
+    writeStream.on('close', () => {
+      resolve();
+    });
+
+    writeStream.on('error', (err) => {
+      reject(err);
+    });
+  });
+}
+
+async function gridFSToZip(id:string): Promise<Buffer> {
+  const readStream = gfs.openDownloadStreamByName(`geoJSON_${id}.zip`);
+  const bufferArray = [];
+  readStream.on('data', chunk => {  
+      bufferArray.push(chunk)
+  });
+
+  return new Promise<Buffer>((resolve, reject) => {
+    readStream.on('end', () => {
+      resolve(Buffer.concat(bufferArray))
+    })
+    readStream.on('error', err => {
+      reject(err)
+    })
+  });
 }
 
 
 
 
-
-export {bufferToZip, findUserById, zipToDisk, diskToZipBuffer}
+export {bufferToZip, findUserById, zipToDisk, diskToZipBuffer, zipToGridFS, gridFSToZip}
