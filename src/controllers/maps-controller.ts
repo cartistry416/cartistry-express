@@ -5,7 +5,7 @@ import { MapDataModel, MapDataDocument } from '../models/mapData-model.js'
 
 import mongoose from 'mongoose'
 import {MapFileParserFactory} from '../utils/MapFileParser.js'
-import { bufferToZip, zipToGridFS, gridFSToZip} from '../utils/utils.js'
+import { bufferToZip, zipToGridFS, gridFSToZip, zipToBuffer, patchGeoJSON, zipToGridFSOverwrite} from '../utils/utils.js'
 import { findUserById } from '../utils/utils.js'
 
 // import path from 'path'
@@ -62,7 +62,7 @@ const uploadMap = async (req, res) => {
     try {
         const mapMetadataDocumentId = mongoose.Types.ObjectId()
         const geoJSONZipId = mongoose.Types.ObjectId().toString()
-        await zipToGridFS(geoJSONZipId, geoJSONZip) 
+        await zipToGridFS(geoJSONZipId, geoJSONZip) // This line is basically all we have to change!!!
         
         const mapDataDocument = await MapDataModel.create({geoJSONZipId, proprietaryJSON: {templateType: body.templateType}})
         const mapMetadataDocument = await MapMetadataModel.create({_id: mapMetadataDocumentId, title: body.title, owner: user._id, mapData: mapDataDocument._id})
@@ -236,7 +236,47 @@ const updateMapPrivacy = async (req, res) => {
 
 }
 const saveMapEdits = async (req, res: Response) => {
-    
+    const body = req.body
+    if (!body || !body.delta) {
+        return res.status(400).json({
+            success: false,
+            errorMessage: 'You must provide delta in body',
+        })
+    }
+    const user = await findUserById(req.userId) 
+
+    if (!user) {
+        return res.status(500).json({success: false, errorMessage: "Unable to find user"})
+    }
+    const mapId = req.params.id
+
+    try {
+        const mapMetaDataDocument = await MapMetadataModel.findById(mapId)
+        if(mapMetaDataDocument.owner.toString() !== user._id.toString()) {
+            return res.status(401).json({success:false, errorMessage:"Unauthorized to create post from this map"})
+        }
+
+        const mapDataDocument = await MapDataModel.findById(mapMetaDataDocument.mapData)
+        const geoJSONZip: Buffer = await gridFSToZip(mapDataDocument.geoJSONZipId)
+        const geoJSON: Object = JSON.parse((await zipToBuffer(geoJSONZip)).toString())
+        const editedGeoJSON: Buffer = Buffer.from(JSON.stringify(patchGeoJSON(geoJSON, body.delta)))
+        const editedGeoJSONZip: Buffer = await bufferToZip(editedGeoJSON)
+        await zipToGridFSOverwrite(mapDataDocument.geoJSONZipId, editedGeoJSONZip)
+
+
+        if (body.proprietaryJSON) {
+            mapDataDocument.proprietaryJSON = body.proprietaryJSON
+            mapDataDocument.markModified('proprietaryJSON')
+            await mapDataDocument.save()
+        }
+        return res.status(200).json({success: true})
+    }
+    catch (err) {
+        return res.status(500).json({success: false, errorMessage:"Unable to perform one of the following: read from gridfs, perform patching, write to gridfs: " + err})
+    }
+
+
+
 }
 const publishMap = async (req, res: Response) => {
 
@@ -255,6 +295,11 @@ const publishMap = async (req, res: Response) => {
     const mapId = req.params.id
 
     try {
+        const mapMetaDataDocument = await MapMetadataModel.findById(mapId)
+        if(mapMetaDataDocument.owner.toString() !== user._id.toString()) {
+            return res.status(401).json({success:false, errorMessage:"Unauthorized to create post from this map"})
+        }
+
         await MapMetadataModel.findByIdAndUpdate(mapId, {isPrivated: false})
 
         const post = await PostModel.create({owner: req.userId, 

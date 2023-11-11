@@ -3,6 +3,9 @@ import archiver from 'archiver';
 import {UserModel, UserDocument} from '../models/user-model.js'
 import { promises as fs } from 'fs'
 import {gfs} from '../db/db.js'
+import {Delta, patch} from 'jsondiffpatch'
+import * as unzipper from 'unzipper'
+import {Readable} from 'stream'
 
 async function findUserById(userId: string): Promise<UserDocument | null> {
   try {
@@ -42,6 +45,22 @@ async function bufferToZip(data: Buffer): Promise<Buffer> {
         reject(err);
       })
  })
+}
+
+async function zipToBuffer(zipBuffer: Buffer): Promise<Buffer> {
+  let buffer: Buffer | null = null
+
+  const zipStream = Readable.from(zipBuffer)
+
+  const readStream = zipStream.pipe(unzipper.Parse())
+
+  readStream.on('entry', async (entry) => {
+    buffer = await entry.buffer
+    readStream.destroy()
+  })
+
+  await new Promise<void>((resolve) => readStream.on('close', resolve))
+  return buffer
 }
 
 
@@ -92,7 +111,26 @@ async function gridFSToZip(id:string): Promise<Buffer> {
   });
 }
 
+async function zipToGridFSOverwrite(id: string, zipData: Buffer): Promise<void> {
+
+  await new Promise<void>((resolve, reject) => {
+    gfs.delete(id, (err) => {
+      if (err) {
+        reject(err)
+      } else {
+        resolve()
+      }
+    })
+  })
+
+  await zipToGridFS(id, zipData)
+}
+
+async function patchGeoJSON(geoJSON: Object, delta: Delta): Promise<Buffer> {
+   const editedGeoJSON = patch(geoJSON, delta)
+   // after performing patch, compress JSON to zip in order to store in GridFS
+   return await bufferToZip(Buffer.from(JSON.stringify(editedGeoJSON)))
+}
 
 
-
-export {bufferToZip, findUserById, zipToDisk, diskToZipBuffer, zipToGridFS, gridFSToZip}
+export {bufferToZip, findUserById, zipToDisk, diskToZipBuffer, zipToGridFS, gridFSToZip, patchGeoJSON, zipToBuffer, zipToGridFSOverwrite}

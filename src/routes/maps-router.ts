@@ -14,7 +14,7 @@ import auth from '../auth/auth.js'
 import multer from 'multer'
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
-
+mapsRouter.post('/maps/upload', auth.verify, upload.single('zipFile'), MapsController.uploadMap)
 
 mapsRouter.get('/maps/:id/export', MapsController.exportMap)
 mapsRouter.get('/maps/map-metadata', auth.verify, MapsController.getMapMetadataOwnedByUser)
@@ -28,6 +28,7 @@ mapsRouter.post('/maps/:id/publish', auth.verify, MapsController.publishMap)
 
 
 mapsRouter.put('/maps/:id/favorite', auth.verify, MapsController.favoriteMap)
+mapsRouter.put('/maps/:id/save', auth.verify, MapsController.saveMapEdits)
 mapsRouter.put('/maps/:id/rename', auth.verify, MapsController.renameMap)
 mapsRouter.put('/maps/:id/update-privacy', auth.verify, MapsController.updateMapPrivacy)
 

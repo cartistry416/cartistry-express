@@ -12,7 +12,7 @@ import { MapMetadataModel } from '../models/mapMetadata-model.js';
 import { MapDataModel } from '../models/mapData-model.js';
 import mongoose from 'mongoose';
 import { MapFileParserFactory } from '../utils/MapFileParser.js';
-import { bufferToZip, zipToGridFS, gridFSToZip } from '../utils/utils.js';
+import { bufferToZip, zipToGridFS, gridFSToZip, zipToBuffer, patchGeoJSON, zipToGridFSOverwrite } from '../utils/utils.js';
 import { findUserById } from '../utils/utils.js';
 const uploadMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const body = req.body;
@@ -55,7 +55,7 @@ const uploadMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const mapMetadataDocumentId = mongoose.Types.ObjectId();
         const geoJSONZipId = mongoose.Types.ObjectId().toString();
-        yield zipToGridFS(geoJSONZipId, geoJSONZip);
+        yield zipToGridFS(geoJSONZipId, geoJSONZip); // This line is basically all we have to change!!!
         const mapDataDocument = yield MapDataModel.create({ geoJSONZipId, proprietaryJSON: { templateType: body.templateType } });
         const mapMetadataDocument = yield MapMetadataModel.create({ _id: mapMetadataDocumentId, title: body.title, owner: user._id, mapData: mapDataDocument._id });
         user.mapsMetadata.push(mapMetadataDocument._id);
@@ -197,6 +197,39 @@ const updateMapPrivacy = (req, res) => __awaiter(void 0, void 0, void 0, functio
     }
 });
 const saveMapEdits = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const body = req.body;
+    if (!body || !body.delta) {
+        return res.status(400).json({
+            success: false,
+            errorMessage: 'You must provide delta in body',
+        });
+    }
+    const user = yield findUserById(req.userId);
+    if (!user) {
+        return res.status(500).json({ success: false, errorMessage: "Unable to find user" });
+    }
+    const mapId = req.params.id;
+    try {
+        const mapMetaDataDocument = yield MapMetadataModel.findById(mapId);
+        if (mapMetaDataDocument.owner.toString() !== user._id.toString()) {
+            return res.status(401).json({ success: false, errorMessage: "Unauthorized to create post from this map" });
+        }
+        const mapDataDocument = yield MapDataModel.findById(mapMetaDataDocument.mapData);
+        const geoJSONZip = yield gridFSToZip(mapDataDocument.geoJSONZipId);
+        const geoJSON = JSON.parse((yield zipToBuffer(geoJSONZip)).toString());
+        const editedGeoJSON = Buffer.from(JSON.stringify(patchGeoJSON(geoJSON, body.delta)));
+        const editedGeoJSONZip = yield bufferToZip(editedGeoJSON);
+        yield zipToGridFSOverwrite(mapDataDocument.geoJSONZipId, editedGeoJSONZip);
+        if (body.proprietaryJSON) {
+            mapDataDocument.proprietaryJSON = body.proprietaryJSON;
+            mapDataDocument.markModified('proprietaryJSON');
+            yield mapDataDocument.save();
+        }
+        return res.status(200).json({ success: true });
+    }
+    catch (err) {
+        return res.status(500).json({ success: false, errorMessage: "Unable to perform one of the following: read from gridfs, perform patching, write to gridfs: " + err });
+    }
 });
 const publishMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const body = req.body;
@@ -212,6 +245,10 @@ const publishMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
     const mapId = req.params.id;
     try {
+        const mapMetaDataDocument = yield MapMetadataModel.findById(mapId);
+        if (mapMetaDataDocument.owner.toString() !== user._id.toString()) {
+            return res.status(401).json({ success: false, errorMessage: "Unauthorized to create post from this map" });
+        }
         yield MapMetadataModel.findByIdAndUpdate(mapId, { isPrivated: false });
         const post = yield PostModel.create({ owner: req.userId,
             ownerUserName: user.userName,

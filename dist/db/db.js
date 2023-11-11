@@ -33,7 +33,7 @@ const connectDB = () => __awaiter(void 0, void 0, void 0, function* () {
         gfs = new mongoose.mongo.GridFSBucket(conn.connection.db, {
             bucketName: "mapZipFileUploads"
         });
-        console.log(gfs);
+        //console.log(gfs)
         return conn;
     }
     catch (err) {

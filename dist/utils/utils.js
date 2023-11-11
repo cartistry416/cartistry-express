@@ -11,6 +11,9 @@ import archiver from 'archiver';
 import { UserModel } from '../models/user-model.js';
 import { promises as fs } from 'fs';
 import { gfs } from '../db/db.js';
+import { patch } from 'jsondiffpatch';
+import * as unzipper from 'unzipper';
+import { Readable } from 'stream';
 function findUserById(userId) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -45,6 +48,19 @@ function bufferToZip(data) {
                 reject(err);
             });
         });
+    });
+}
+function zipToBuffer(zipBuffer) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let buffer = null;
+        const zipStream = Readable.from(zipBuffer);
+        const readStream = zipStream.pipe(unzipper.Parse());
+        readStream.on('entry', (entry) => __awaiter(this, void 0, void 0, function* () {
+            buffer = yield entry.buffer;
+            readStream.destroy();
+        }));
+        yield new Promise((resolve) => readStream.on('close', resolve));
+        return buffer;
     });
 }
 function zipToDisk(path, data) {
@@ -95,4 +111,26 @@ function gridFSToZip(id) {
         });
     });
 }
-export { bufferToZip, findUserById, zipToDisk, diskToZipBuffer, zipToGridFS, gridFSToZip };
+function zipToGridFSOverwrite(id, zipData) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield new Promise((resolve, reject) => {
+            gfs.delete(id, (err) => {
+                if (err) {
+                    reject(err);
+                }
+                else {
+                    resolve();
+                }
+            });
+        });
+        yield zipToGridFS(id, zipData);
+    });
+}
+function patchGeoJSON(geoJSON, delta) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const editedGeoJSON = patch(geoJSON, delta);
+        // after performing patch, compress JSON to zip in order to store in GridFS
+        return yield bufferToZip(Buffer.from(JSON.stringify(editedGeoJSON)));
+    });
+}
+export { bufferToZip, findUserById, zipToDisk, diskToZipBuffer, zipToGridFS, gridFSToZip, patchGeoJSON, zipToBuffer, zipToGridFSOverwrite };
