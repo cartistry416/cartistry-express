@@ -145,7 +145,7 @@ describe('PostsController tests', () => {
         })
 
         it ('search for posts by tags', async () => {
-            res = await req.get(`/posts-api/posts/search-tags`).send({tags})
+            res = await req.get(`/posts-api/posts/search-tags?tags=tag1,tag2,tag3`)
             expect(res.status).toBe(200)
             expect(res.body.posts.length).toBe(1)
         })

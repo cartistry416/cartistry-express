@@ -132,7 +132,7 @@ describe('PostsController tests', () => {
             expect(res.body.posts.length).toBe(2);
         }));
         it('search for posts by tags', () => __awaiter(void 0, void 0, void 0, function* () {
-            res = yield req.get(`/posts-api/posts/search-tags`).send({ tags });
+            res = yield req.get(`/posts-api/posts/search-tags?tags=tag1,tag2,tag3`);
             expect(res.status).toBe(200);
             expect(res.body.posts.length).toBe(1);
         }));

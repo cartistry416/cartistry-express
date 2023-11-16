@@ -14,18 +14,11 @@ function extractPostCardInfo(posts: PostDocument[]) {
 }
 
 const searchPostsByTitle = async (req, res) => {
-    const body = req.body;
-    if (!body) {
-        return res.status(400).json({
-            success: false,
-            error: 'You must provide a body',
-        })
-    }
 
-    const limit = body.limit
-    const postTitleQuery = new RegExp(body.title, "i") // case insensitive
+    const limit = req.query.limit ? Number.parseInt(req.query.limit) : null
+    const postTitleQuery = new RegExp(req.query.title, "i") // case insensitive
     try {
-        const posts = await PostModel.find({title: postTitleQuery})
+        const posts = await PostModel.find({title: postTitleQuery}).limit(limit)
         // if (posts.length === 0) {
         //     return res.status(404).json({success: false})
         // }
@@ -37,18 +30,10 @@ const searchPostsByTitle = async (req, res) => {
 }
 
 const searchPostsByTags = async (req, res) => {
-    const body = req.body;
-    if (!body) {
-        return res.status(400).json({
-            success: false,
-            error: 'You must provide a body',
-        })
-    }
-
-    const limit = body.limit
-    const tags = body.tags
+    const limit = req.query.limit ? Number.parseInt(req.query.limit) : null
+    const tags = req.query.tags ? req.query.tags.split(',') : [""]
     try {
-        const posts = await PostModel.find({tags: {$all: tags}})
+        const posts = await PostModel.find({tags: {$all: tags}}).limit(limit)
         // if (posts.length === 0) {
         //     return res.status(404).json({success: false, errorMessage: "No posts found searched by tags"})
         // }
@@ -61,6 +46,8 @@ const searchPostsByTags = async (req, res) => {
 
 const getPostsOwnedByUser = async (req, res) => {
 
+    const limit = req.query.limit ? Number.parseInt(req.query.limit) : null
+
     const user = await findUserById(req.params.userId)
     if (!user) {
         return res.status(500).json({
@@ -71,7 +58,7 @@ const getPostsOwnedByUser = async (req, res) => {
 
 
     try {
-        const posts = await PostModel.find({ownerUserName: user.userName})
+        const posts = await PostModel.find({ownerUserName: user.userName}).limit(limit)
         return res.status(200).json({
             success: true,
             posts: extractPostCardInfo(posts)
@@ -102,8 +89,7 @@ const getPost = async (req , res) => {
 }
 
 const getMostRecentPosts = async (req, res) => {
-    const limit = Number.parseInt(req.query.limit)
-    // console.log(limit)
+    const limit = req.query.limit ? Number.parseInt(req.query.limit) : null
     try {
         const posts = await PostModel.aggregate([
             {$sort: {createdAt: -1}},
@@ -118,8 +104,7 @@ const getMostRecentPosts = async (req, res) => {
 }
 
 const getMostLikedPosts = async (req, res) => {
-    const limit = Number.parseInt(req.query.limit)
-    //console.log(limit)
+    const limit = req.query.limit ? Number.parseInt(req.query.limit) : null
     try {
         const posts = await PostModel.aggregate([
             {$sort: {likes: -1}},
