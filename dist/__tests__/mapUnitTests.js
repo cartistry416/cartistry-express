@@ -11,7 +11,7 @@ import request from 'supertest';
 import { connectDB, disconnectDB } from '../db/db.js';
 import { app } from '../app.js';
 import { randomBytes } from 'crypto';
-import { bufferToZip } from '../utils/utils.js';
+import { bufferToZip, zipToBuffer } from '../utils/utils.js';
 import { promises as fs } from 'fs';
 import path from 'path';
 const req = request(app);
@@ -84,6 +84,8 @@ describe('MapsController tests', () => {
             res = yield req.get(`/maps-api/maps/${mapMetadataId}`).set('Cookie', token);
             expect(res.status).toBe(200);
             expect(res.body.length).toBeGreaterThan(0);
+            let geoJSON = yield zipToBuffer(Buffer.from(res.body));
+            expect(JSON.parse(geoJSON.toString())).toBeDefined();
         }));
         it('Uploads kml Map', () => __awaiter(void 0, void 0, void 0, function* () {
             const mapData = yield fs.readFile(path.join(__dirname, '../../examples/US.kml'));
@@ -97,7 +99,7 @@ describe('MapsController tests', () => {
             expect(res.status).toBe(200);
             res = yield req.get('/maps-api/maps/map-metadata').set('Cookie', token);
             expect(res.status).toBe(200);
-            expect(res.body.mapMetadataIds.length).toBe(3);
+            expect(res.body.mapMetadatas.length).toBe(3);
         }));
         it('Updates the privacy status to public for original geoJSON map', () => __awaiter(void 0, void 0, void 0, function* () {
             res = yield req.put(`/maps-api/maps/${mapMetadataId}/update-privacy`).set('Cookie', token);
@@ -112,20 +114,20 @@ describe('MapsController tests', () => {
             expect(res.body.title).toBe(newTitle);
             res = yield req.get(`/maps-api/maps/public-map-metadata/${userId}`);
             expect(res.status).toBe(200);
-            expect(res.body.mapMetadataIds.length).toBe(1);
+            expect(res.body.mapMetadatas.length).toBe(1);
             res = yield req.get('/maps-api/maps/map-metadata').set('Cookie', token);
             expect(res.status).toBe(200);
-            expect(res.body.mapMetadataIds.length).toBe(3);
+            expect(res.body.mapMetadatas.length).toBe(3);
         }));
         it('deletes original geoJSON map', () => __awaiter(void 0, void 0, void 0, function* () {
             res = yield req.delete(`/maps-api/maps/${mapMetadataId}`).set('Cookie', token);
             expect(res.status).toBe(200);
             res = yield req.get(`/maps-api/maps/public-map-metadata/${userId}`);
             expect(res.status).toBe(200);
-            expect(res.body.mapMetadataIds.length).toBe(0);
+            expect(res.body.mapMetadatas.length).toBe(0);
             res = yield req.get('/maps-api/maps/map-metadata').set('Cookie', token);
             expect(res.status).toBe(200);
-            expect(res.body.mapMetadataIds.length).toBe(2);
+            expect(res.body.mapMetadatas.length).toBe(2);
         }));
         // it('Uploads shp Map', async () => {
         //     const mapData = await fs.readFile(path.join(__dirname, '../../examples/USA_adm.zip'))

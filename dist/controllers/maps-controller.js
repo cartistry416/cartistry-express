@@ -125,14 +125,24 @@ const getMapMetadataOwnedByUser = (req, res) => __awaiter(void 0, void 0, void 0
         return res.status(500).json({ success: false, errorMessage: "Unable to find user" });
     }
     //console.log(user.mapsMetadata.length)
-    return res.status(200).json({ success: true, mapMetadataIds: user.mapsMetadata });
+    const mapMetadatas = [];
+    for (let i = 0; i < user.mapsMetadata.length; i++) {
+        const mapMetadataId = user.mapsMetadata[i];
+        const mapMetaDataDocument = yield MapMetadataModel.findById(mapMetadataId);
+        if (!mapMetaDataDocument) {
+            console.error('Something went wrong, could not find mapMetadata document from users array of metadata ids');
+            continue;
+        }
+        mapMetadatas.push(mapMetaDataDocument.toObject());
+    }
+    return res.status(200).json({ success: true, mapMetadatas });
 });
 const getPublicMapMetadataOwnedByUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield findUserById(req.params.userId);
     if (!user) {
         return res.status(500).json({ success: false, errorMessage: "Unable to find user" });
     }
-    const publicMapMetadataIds = [];
+    const publicMapMetadatas = [];
     for (let i = 0; i < user.mapsMetadata.length; i++) {
         const mapMetadataId = user.mapsMetadata[i];
         const mapMetaDataDocument = yield MapMetadataModel.findById(mapMetadataId);
@@ -141,11 +151,11 @@ const getPublicMapMetadataOwnedByUser = (req, res) => __awaiter(void 0, void 0, 
             continue;
         }
         else if (!mapMetaDataDocument.isPrivated) {
-            publicMapMetadataIds.push(mapMetadataId.toString());
+            publicMapMetadatas.push(mapMetaDataDocument.toObject());
         }
     }
     //console.log(publicMapMetadataIds.length)
-    return res.status(200).json({ success: true, mapMetadataIds: publicMapMetadataIds });
+    return res.status(200).json({ success: true, mapMetadatas: publicMapMetadatas });
 });
 const getMapData = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield findUserById(req.userId);

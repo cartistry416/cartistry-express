@@ -4,8 +4,7 @@ import {UserModel, UserDocument} from '../models/user-model.js'
 import { promises as fs } from 'fs'
 import {gfs} from '../db/db.js'
 import {Delta, patch} from 'jsondiffpatch'
-import * as unzipper from 'unzipper'
-import {Readable} from 'stream'
+import AdmZip from 'adm-zip'
 
 async function findUserById(userId: string): Promise<UserDocument | null> {
   try {
@@ -48,19 +47,14 @@ async function bufferToZip(data: Buffer): Promise<Buffer> {
 }
 
 async function zipToBuffer(zipBuffer: Buffer): Promise<Buffer> {
-  let buffer: Buffer | null = null
-
-  const zipStream = Readable.from(zipBuffer)
-
-  const readStream = zipStream.pipe(unzipper.Parse())
-
-  readStream.on('entry', async (entry) => {
-    buffer = await entry.buffer
-    readStream.destroy()
+  const zip = new AdmZip(zipBuffer);
+  const entries = zip.getEntries();
+  const buffers: Buffer[] = [];
+  entries.forEach((entry) => {
+    buffers.push(entry.getData())
   })
 
-  await new Promise<void>((resolve) => readStream.on('close', resolve))
-  return buffer
+  return Buffer.concat(buffers)
 }
 
 

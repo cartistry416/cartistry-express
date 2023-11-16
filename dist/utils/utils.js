@@ -12,8 +12,7 @@ import { UserModel } from '../models/user-model.js';
 import { promises as fs } from 'fs';
 import { gfs } from '../db/db.js';
 import { patch } from 'jsondiffpatch';
-import * as unzipper from 'unzipper';
-import { Readable } from 'stream';
+import AdmZip from 'adm-zip';
 function findUserById(userId) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -52,15 +51,13 @@ function bufferToZip(data) {
 }
 function zipToBuffer(zipBuffer) {
     return __awaiter(this, void 0, void 0, function* () {
-        let buffer = null;
-        const zipStream = Readable.from(zipBuffer);
-        const readStream = zipStream.pipe(unzipper.Parse());
-        readStream.on('entry', (entry) => __awaiter(this, void 0, void 0, function* () {
-            buffer = yield entry.buffer;
-            readStream.destroy();
-        }));
-        yield new Promise((resolve) => readStream.on('close', resolve));
-        return buffer;
+        const zip = new AdmZip(zipBuffer);
+        const entries = zip.getEntries();
+        const buffers = [];
+        entries.forEach((entry) => {
+            buffers.push(entry.getData());
+        });
+        return Buffer.concat(buffers);
     });
 }
 function zipToDisk(path, data) {

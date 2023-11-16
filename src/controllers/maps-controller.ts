@@ -156,7 +156,18 @@ const getMapMetadataOwnedByUser = async (req, res) => {
         return res.status(500).json({success: false, errorMessage: "Unable to find user"})
     }
     //console.log(user.mapsMetadata.length)
-    return res.status(200).json({success: true, mapMetadataIds: user.mapsMetadata})
+    const mapMetadatas: Object[] = []
+    for (let i=0; i<user.mapsMetadata.length; i++) {
+        const mapMetadataId = user.mapsMetadata[i]
+        const mapMetaDataDocument = await MapMetadataModel.findById(mapMetadataId)
+        if (!mapMetaDataDocument) {
+            console.error('Something went wrong, could not find mapMetadata document from users array of metadata ids')
+            continue
+        }
+        mapMetadatas.push(mapMetaDataDocument.toObject())
+    }
+
+    return res.status(200).json({success: true, mapMetadatas})
 }
 const getPublicMapMetadataOwnedByUser = async (req, res) => {
     const user = await findUserById(req.params.userId)
@@ -164,7 +175,7 @@ const getPublicMapMetadataOwnedByUser = async (req, res) => {
         return res.status(500).json({success: false, errorMessage: "Unable to find user"})
     }
 
-    const publicMapMetadataIds: string[] = []
+    const publicMapMetadatas: Object[] = []
     for (let i=0; i<user.mapsMetadata.length; i++) {
         const mapMetadataId = user.mapsMetadata[i]
         const mapMetaDataDocument = await MapMetadataModel.findById(mapMetadataId)
@@ -173,11 +184,11 @@ const getPublicMapMetadataOwnedByUser = async (req, res) => {
             continue
         }
         else if (!mapMetaDataDocument.isPrivated) {
-            publicMapMetadataIds.push(mapMetadataId.toString())
+            publicMapMetadatas.push(mapMetaDataDocument.toObject())
         }
     }
     //console.log(publicMapMetadataIds.length)
-    return res.status(200).json({success: true, mapMetadataIds: publicMapMetadataIds})
+    return res.status(200).json({success: true, mapMetadatas: publicMapMetadatas})
 
 }
 const getMapData = async (req, res: Response) => {

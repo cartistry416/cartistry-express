@@ -3,7 +3,7 @@ import { connectDB, disconnectDB} from '../db/db.js'
 import {app} from '../app.js'
 
 import { randomBytes } from 'crypto'
-import { bufferToZip } from '../utils/utils.js'
+import { bufferToZip, zipToBuffer } from '../utils/utils.js'
 import { promises as fs, stat } from 'fs'
 
 
@@ -93,6 +93,8 @@ describe('MapsController tests', () => {
             res = await req.get(`/maps-api/maps/${mapMetadataId}`).set('Cookie', token)
             expect(res.status).toBe(200)
             expect(res.body.length).toBeGreaterThan(0)
+            let geoJSON = await zipToBuffer(Buffer.from(res.body))
+            expect(JSON.parse(geoJSON.toString())).toBeDefined()
         })
 
         it('Uploads kml Map', async () => {
@@ -109,7 +111,7 @@ describe('MapsController tests', () => {
             expect(res.status).toBe(200)
             res = await req.get('/maps-api/maps/map-metadata').set('Cookie', token)
             expect(res.status).toBe(200)
-            expect(res.body.mapMetadataIds.length).toBe(3)
+            expect(res.body.mapMetadatas.length).toBe(3)
         })
 
         it('Updates the privacy status to public for original geoJSON map', async () => {
@@ -128,11 +130,11 @@ describe('MapsController tests', () => {
 
             res = await req.get(`/maps-api/maps/public-map-metadata/${userId}`)
             expect(res.status).toBe(200)
-            expect(res.body.mapMetadataIds.length).toBe(1)
+            expect(res.body.mapMetadatas.length).toBe(1)
 
             res = await req.get('/maps-api/maps/map-metadata').set('Cookie', token)
             expect(res.status).toBe(200)
-            expect(res.body.mapMetadataIds.length).toBe(3)
+            expect(res.body.mapMetadatas.length).toBe(3)
         })
 
         it('deletes original geoJSON map', async () => {
@@ -141,11 +143,11 @@ describe('MapsController tests', () => {
 
             res = await req.get(`/maps-api/maps/public-map-metadata/${userId}`)
             expect(res.status).toBe(200)
-            expect(res.body.mapMetadataIds.length).toBe(0)
+            expect(res.body.mapMetadatas.length).toBe(0)
 
             res = await req.get('/maps-api/maps/map-metadata').set('Cookie', token)
             expect(res.status).toBe(200)
-            expect(res.body.mapMetadataIds.length).toBe(2)
+            expect(res.body.mapMetadatas.length).toBe(2)
         })
 
 
