@@ -79,15 +79,10 @@ describe('MapsController tests', () => {
             res = await req.post('/maps-api/maps/upload').field('fileExtension', 'json').field('title', 'australia json').field('templateType', 'heat')
             .attach('zipFile', zipData, 'data.zip').set('Cookie', token)
             expect(res.status).toBe(200)
-
-            mapMetadataId = res.body.mapMetadataId
+            expect(res.body.mapMetadata).toBeDefined()
+            mapMetadataId = res.body.mapMetadata._id
             mapDataId = res.body.mapDataId
         }, 20000)
-        
-        it('exports as geoJSON', async () => {
-            res = await req.get(`/maps-api/maps/${mapMetadataId}/export`)
-            expect(res.status).toBe(200)
-        }, 20000) 
 
         it('Can get geoJSON zip data', async () => {
             res = await req.get(`/maps-api/maps/${mapMetadataId}`).set('Cookie', token)
@@ -109,6 +104,7 @@ describe('MapsController tests', () => {
         it('Forks the original geoJSON map', async () => {
             res = await req.post(`/maps-api/maps/${mapMetadataId}/fork`).set('Cookie', token)
             expect(res.status).toBe(200)
+            expect(res.body.mapMetadata).toBeDefined()
             res = await req.get('/maps-api/maps/map-metadata').set('Cookie', token)
             expect(res.status).toBe(200)
             expect(res.body.mapMetadatas.length).toBe(3)
@@ -136,6 +132,14 @@ describe('MapsController tests', () => {
             expect(res.status).toBe(200)
             expect(res.body.mapMetadatas.length).toBe(3)
         })
+
+        it('exports as geoJSON', async () => {
+            res = await req.get(`/maps-api/maps/${mapMetadataId}/export`)
+            expect(res.status).toBe(200)
+            expect(res.body.length).toBeGreaterThan(0)
+            let geoJSON = await zipToBuffer(Buffer.from(res.body))
+            expect(JSON.parse(geoJSON.toString())).toBeDefined()
+        }, 20000) 
 
         it('deletes original geoJSON map', async () => {
             res = await req.delete(`/maps-api/maps/${mapMetadataId}`).set('Cookie', token)

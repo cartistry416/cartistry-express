@@ -69,7 +69,7 @@ const uploadMap = async (req, res) => {
         user.mapsMetadata.push(mapMetadataDocument._id)
         user.markModified('mapsMetadata')
         await user.save()
-        return res.status(200).json({success: true, mapMetadataId: mapMetadataDocument._id, mapDataId: mapDataDocument._id})
+        return res.status(200).json({success: true, mapMetadata: mapMetadataDocument.toObject(), mapDataId: mapDataDocument._id})
     }
     catch (err) {
         return res.status(500).json({successs: false, errorMessage: "A lot of possible things could have went wrong: " + err})
@@ -125,7 +125,7 @@ const forkMap = async (req, res) => {
         originalMapMetaDataDocument.forks++;
         await originalMapMetaDataDocument.save()
 
-        return res.status(200).json({success: true})
+        return res.status(200).json({success: true, mapMetadata: cloneMapMetaData.toObject()})
     }
     catch(err) {
         return res.status(500).json({success: false, errorMessage: "Unable to create or save something to the database OR read/write to/from gridFS " + err})
@@ -140,6 +140,9 @@ const exportMap = async (req, res) => {
 
     try {
         const mapMetadataDocument = await MapMetadataModel.findById(req.params.id)
+        if (mapMetadataDocument.isPrivated) {
+            return res.status(401).json({success: false, errorMessage: "Unauthorized to export this map"})
+        }
         const mapDataDocument = await MapDataModel.findById(mapMetadataDocument.mapData)
         const geoJSONZip = await gridFSToZip(mapDataDocument.geoJSONZipId)
         res.setHeader('Content-Type', 'application/octet-stream')
