@@ -259,7 +259,7 @@ const commentOnPost = async (req, res) => {
    post.comments.push(newComment)
    post.markModified('comments')
    await post.save()
-   return res.status(200).json({success: true, comments: newComments})
+   return res.status(200).json({success: true, comments: newComments, index: post.comments.length-1, comment: newComment})
 
 }
 
@@ -329,7 +329,7 @@ const updatePostLikes = async(req, res) => {
                 return res.status(500).json({success: false, errorMessage: "Unable to remove from users liked posts"})
             }
 
-            return res.status(200).json({success: true})
+            return res.status(200).json({success: true, alreadyLiked: false, likes: post.likes})
         }
         catch (err) {
             return res.status(500).json({success: false, errorMessage: "Unable to remove from users liked posts"})
@@ -350,7 +350,7 @@ const updatePostLikes = async(req, res) => {
     catch (err) {
         return res.status(500).json({success: false, errorMessage: "Unable to add to users liked posts"})
     }
-    return res.status(200).json({success: true})
+    return res.status(200).json({success: true, alreadyLiked: true, likes: post.likes})
 }
 
 

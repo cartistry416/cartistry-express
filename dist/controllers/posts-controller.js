@@ -230,7 +230,7 @@ const commentOnPost = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     post.comments.push(newComment);
     post.markModified('comments');
     yield post.save();
-    return res.status(200).json({ success: true, comments: newComments });
+    return res.status(200).json({ success: true, comments: newComments, index: post.comments.length - 1, comment: newComment });
 });
 const editComment = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const body = req.body;
@@ -287,7 +287,7 @@ const updatePostLikes = (req, res) => __awaiter(void 0, void 0, void 0, function
             if (result.nModified === 0) {
                 return res.status(500).json({ success: false, errorMessage: "Unable to remove from users liked posts" });
             }
-            return res.status(200).json({ success: true });
+            return res.status(200).json({ success: true, alreadyLiked: false, likes: post.likes });
         }
         catch (err) {
             return res.status(500).json({ success: false, errorMessage: "Unable to remove from users liked posts" });
@@ -306,7 +306,7 @@ const updatePostLikes = (req, res) => __awaiter(void 0, void 0, void 0, function
     catch (err) {
         return res.status(500).json({ success: false, errorMessage: "Unable to add to users liked posts" });
     }
-    return res.status(200).json({ success: true });
+    return res.status(200).json({ success: true, alreadyLiked: true, likes: post.likes });
 });
 const deleteComment = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const body = req.body;
