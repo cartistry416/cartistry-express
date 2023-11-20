@@ -48,12 +48,13 @@ describe('PostsController tests', () => {
         let postId2;
         const title = 'TEST POST TITLE';
         const textContent = 'Lorem Ipsum something something';
-        const tags = ['tag1', 'tag2', 'tag3'];
+        const tags = "tag1,tag2,tag3";
         it('example request to create a post', () => __awaiter(void 0, void 0, void 0, function* () {
             res = yield req.post('/posts-api/posts').send({
                 title,
                 textContent
             }).set('Cookie', token);
+            console.log(res.body);
             expect(res.status).toBe(200);
             postId1 = res.body.postId;
             res = yield req.post('/posts-api/posts').send({

@@ -10,13 +10,16 @@ import { PostsController } from '../controllers/posts-controller.js';
 const postsRouter = express.Router();
 // const auth = require('../auth')
 import auth from '../auth/auth.js';
+import multer from 'multer';
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 postsRouter.get('/posts/search-title', PostsController.searchPostsByTitle);
 postsRouter.get('/posts/search-tags', PostsController.searchPostsByTags);
 postsRouter.get('/posts/user/:userId', PostsController.getPostsOwnedByUser);
 postsRouter.get('/posts/most-recent', PostsController.getMostRecentPosts);
 postsRouter.get('/posts/most-liked', PostsController.getMostLikedPosts);
 postsRouter.get('/posts/:id', PostsController.getPost);
-postsRouter.post('/posts', auth.verify, PostsController.createPost);
+postsRouter.post('/posts', auth.verify, upload.array('images'), PostsController.createPost);
 // Any non-guest user can like, dislike, or comment on another user's post (or their own)
 postsRouter.put('/posts/:id', auth.verify, PostsController.editPost);
 postsRouter.put('/posts/:id/likes', auth.verify, PostsController.updatePostLikes);
