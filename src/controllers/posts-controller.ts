@@ -121,13 +121,33 @@ const getMostLikedPosts = async (req, res) => {
 
 const createPost = async (req, res) => {
     const body = req.body
-    let result: any = null
     if (!body || !body.title || !body.textContent) {
         return res.status(400).json({
             success: false,
-            error: 'You must provide title and textContent in body',
+            errorMessage: 'You must provide title and textContent in body',
         })
     }
+    let tags = []
+    if (body.tags) {
+        tags = body.tags.split(',').map(tag => tag.trim())
+        console.log(tags)
+    }
+
+    let result: any = null
+
+    let files = req.files ? req.files : []
+    let fileExtensions = body.fileExtensions ? body.fileExtensions.split(',') : []
+    let images = []
+    if (files.length > 0) {
+        if (!body.fileExtensions || fileExtensions.length !== files.length) {
+            return res.status(400).json({
+                success: false,
+                errorMssage: 'You must provide fileExtensions with length equal to number of files uploaded',
+            })
+        }
+        images = files.map((file, index) => { return {imageData: file.buffer, contentType: body.fileExtensions[index]} } )
+    }
+
 
     const user = await findUserById(req.userId)
     if (!user) {
@@ -137,12 +157,7 @@ const createPost = async (req, res) => {
         })
     }
 
-    let tags = []
-    if (body.tags) {
-        tags = body.tags;
-    }
-
-    const post = await PostModel.create({owner: req.userId, ownerUserName: user.userName, title: body.title, textContent: body.textContent, tags})
+    const post = await PostModel.create({owner: req.userId, ownerUserName: user.userName, title: body.title, textContent: body.textContent, tags, images})
     if (!post) {
         return res.status(500).json({ success: false, errorMessage: "Unable to create post" })
     }
@@ -259,7 +274,7 @@ const commentOnPost = async (req, res) => {
    post.comments.push(newComment)
    post.markModified('comments')
    await post.save()
-   return res.status(200).json({success: true, comments: newComments})
+   return res.status(200).json({success: true, comments: newComments, index: post.comments.length-1, comment: newComment})
 
 }
 
@@ -329,7 +344,7 @@ const updatePostLikes = async(req, res) => {
                 return res.status(500).json({success: false, errorMessage: "Unable to remove from users liked posts"})
             }
 
-            return res.status(200).json({success: true})
+            return res.status(200).json({success: true, alreadyLiked: false, likes: post.likes})
         }
         catch (err) {
             return res.status(500).json({success: false, errorMessage: "Unable to remove from users liked posts"})
@@ -350,7 +365,7 @@ const updatePostLikes = async(req, res) => {
     catch (err) {
         return res.status(500).json({success: false, errorMessage: "Unable to add to users liked posts"})
     }
-    return res.status(200).json({success: true})
+    return res.status(200).json({success: true, alreadyLiked: true, likes: post.likes})
 }
 
 
