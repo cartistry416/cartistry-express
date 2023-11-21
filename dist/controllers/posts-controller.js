@@ -121,7 +121,7 @@ const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     let tags = [];
     if (body.tags) {
         tags = body.tags.split(',').map(tag => tag.trim());
-        console.log(tags);
+        // console.log(tags)
     }
     let result = null;
     let files = req.files ? req.files : [];
@@ -145,7 +145,7 @@ const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
     let post;
     try {
-        if (body.mapMetadataId) {
+        if (body.mapMetadataId && body.mapMetadataId !== "") {
             const mapMetadata = mongoose.Types.ObjectId(body.mapMetadataId);
             post = yield PostModel.create({ owner: req.userId, ownerUserName: user.userName, title: body.title, textContent: body.textContent, tags, images, mapMetadata });
         }
@@ -162,6 +162,7 @@ const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         return res.status(200).json({ success: true, postId: post._id });
     }
     catch (err) {
+        console.error(err);
         return res.status(500).json({ success: false, errorMessage: "Unable to save post or update user" });
     }
 });

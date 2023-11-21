@@ -131,7 +131,7 @@ const createPost = async (req, res) => {
     let tags = []
     if (body.tags) {
         tags = body.tags.split(',').map(tag => tag.trim())
-        console.log(tags)
+        // console.log(tags)
     }
 
     let result: any = null
@@ -160,7 +160,7 @@ const createPost = async (req, res) => {
 
     let post;
     try {
-        if (body.mapMetadataId) {
+        if (body.mapMetadataId && body.mapMetadataId !== "") {
             const mapMetadata = mongoose.Types.ObjectId(body.mapMetadataId)
             post = await PostModel.create({owner: req.userId, ownerUserName: user.userName, title: body.title, textContent: body.textContent, tags, images, mapMetadata})
         }
@@ -179,6 +179,7 @@ const createPost = async (req, res) => {
         return res.status(200).json({success: true, postId: post._id})
     }
     catch (err) {
+        console.error(err)
         return res.status(500).json({success: false, errorMessage: "Unable to save post or update user"})
     }
 }
