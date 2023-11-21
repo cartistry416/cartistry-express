@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import { UserModel } from '../models/user-model.js'; // Import the User model and UserDocument
 import { PostModel } from '../models/post-model.js'; // Import the Post model and PostDocument
 import { findUserById } from '../utils/utils.js';
+import mongoose from 'mongoose';
 function extractPostCardInfo(posts) {
     const extractedPosts = posts.map(post => {
         const { title, owner, ownerUserName, thumbnail, likes, forks, tags, mapMetadata, _id, createdAt, updatedAt } = post;
@@ -142,11 +143,18 @@ const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             errorMessage: "Unable to find user"
         });
     }
-    const post = yield PostModel.create({ owner: req.userId, ownerUserName: user.userName, title: body.title, textContent: body.textContent, tags, images });
-    if (!post) {
-        return res.status(500).json({ success: false, errorMessage: "Unable to create post" });
-    }
+    let post;
     try {
+        if (body.mapMetadataId) {
+            const mapMetadata = mongoose.Types.ObjectId(body.mapMetadataId);
+            post = yield PostModel.create({ owner: req.userId, ownerUserName: user.userName, title: body.title, textContent: body.textContent, tags, images, mapMetadata });
+        }
+        else {
+            post = yield PostModel.create({ owner: req.userId, ownerUserName: user.userName, title: body.title, textContent: body.textContent, tags, images });
+        }
+        if (!post) {
+            return res.status(500).json({ success: false, errorMessage: "Unable to create post" });
+        }
         result = yield UserModel.findByIdAndUpdate(req.userId, { $push: { posts: post._id } });
         if (!result) {
             return res.status(500).json({ success: false, errorMessage: "Unable to update user" });

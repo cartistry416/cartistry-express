@@ -2,6 +2,7 @@ import { UserModel, UserDocument } from '../models/user-model.js'; // Import the
 import { PostModel, PostDocument } from '../models/post-model.js'; // Import the Post model and PostDocument
 import { MapMetadataModel, MapMetadataDocument } from '../models/mapMetadata-model.js'; // Import the MapMetadata model and MapMetadataDocument
 import { findUserById } from '../utils/utils.js';
+import mongoose from 'mongoose'
 
 
 
@@ -157,12 +158,20 @@ const createPost = async (req, res) => {
         })
     }
 
-    const post = await PostModel.create({owner: req.userId, ownerUserName: user.userName, title: body.title, textContent: body.textContent, tags, images})
-    if (!post) {
-        return res.status(500).json({ success: false, errorMessage: "Unable to create post" })
-    }
-
+    let post;
     try {
+        if (body.mapMetadataId) {
+            const mapMetadata = mongoose.Types.ObjectId(body.mapMetadataId)
+            post = await PostModel.create({owner: req.userId, ownerUserName: user.userName, title: body.title, textContent: body.textContent, tags, images, mapMetadata})
+        }
+        else {
+            post = await PostModel.create({owner: req.userId, ownerUserName: user.userName, title: body.title, textContent: body.textContent, tags, images})
+        }
+
+        if (!post) {
+            return res.status(500).json({ success: false, errorMessage: "Unable to create post" })
+        }
+
         result = await UserModel.findByIdAndUpdate(req.userId, {$push: {posts: post._id}})
         if (!result) {
             return res.status(500).json({success: false, errorMessage: "Unable to update user"})
