@@ -96,6 +96,20 @@ const getMostRecentPosts = (req, res) => __awaiter(void 0, void 0, void 0, funct
         return res.status(500).json({ success: false, errorMessage: `Unable to retrieve ${limit} most recent posts` });
     }
 });
+const getLeastRecentPosts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const limit = req.query.limit ? Number.parseInt(req.query.limit) : null;
+    try {
+        const posts = yield PostModel.aggregate([
+            { $sort: { createdAt: 1 } },
+            { $limit: limit }
+        ]);
+        return res.status(200).json({ success: true, posts });
+    }
+    catch (err) {
+        console.error(err);
+        return res.status(500).json({ success: false, errorMessage: `Unable to retrieve ${limit} least recent posts` });
+    }
+});
 const getMostLikedPosts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const limit = req.query.limit ? Number.parseInt(req.query.limit) : null;
     try {
@@ -364,6 +378,7 @@ const PostsController = {
     commentOnPost,
     updatePostLikes,
     getMostRecentPosts,
+    getLeastRecentPosts,
     getMostLikedPosts,
     getPost,
     getPostsOwnedByUser,
