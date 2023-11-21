@@ -76,8 +76,12 @@ describe('MapsController tests', () => {
         it('Uploads GeoJSON Map', async () => {
             const mapData = await fs.readFile(path.join(__dirname, '../../examples/australia.json'))
             const zipData = await bufferToZip(mapData)
-            res = await req.post('/maps-api/maps/upload').field('fileExtension', 'json').field('title', 'australia json').field('templateType', 'heat')
+            res = await req.post('/maps-api/maps/upload')
+            .field('fileExtension', 'json')
+            .field('title', 'australia json')
+            .field('templateType', 'heat')
             .attach('zipFile', zipData, 'data.zip').set('Cookie', token)
+            
             expect(res.status).toBe(200)
             expect(res.body.mapMetadata).toBeDefined()
             mapMetadataId = res.body.mapMetadata._id

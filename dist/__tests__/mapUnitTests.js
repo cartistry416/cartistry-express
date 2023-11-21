@@ -70,7 +70,10 @@ describe('MapsController tests', () => {
         it('Uploads GeoJSON Map', () => __awaiter(void 0, void 0, void 0, function* () {
             const mapData = yield fs.readFile(path.join(__dirname, '../../examples/australia.json'));
             const zipData = yield bufferToZip(mapData);
-            res = yield req.post('/maps-api/maps/upload').field('fileExtension', 'json').field('title', 'australia json').field('templateType', 'heat')
+            res = yield req.post('/maps-api/maps/upload')
+                .field('fileExtension', 'json')
+                .field('title', 'australia json')
+                .field('templateType', 'heat')
                 .attach('zipFile', zipData, 'data.zip').set('Cookie', token);
             expect(res.status).toBe(200);
             expect(res.body.mapMetadata).toBeDefined();
