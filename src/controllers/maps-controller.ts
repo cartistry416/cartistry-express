@@ -224,6 +224,22 @@ const getMapData = async (req, res: Response) => {
         return res.status(500).json({success: false, errorMessage: "Unable to read zip file from gridfs"})
     }
 }
+
+const getMapMetadata = async (req, res) => {
+    const user = await findUserById(req.userId)
+    if (!user) {
+        return res.status(500).json({success: false, errorMessage: "Unable to find user"})
+    }
+    const mapMetadataDocument = await MapMetadataModel.findById(req.params.id)
+    if (!mapMetadataDocument) {
+        return res.status(404).json({success:false, errorMessage: "Unable to find mapMetadata"})
+    }
+    if (mapMetadataDocument.owner.toString() !== user._id.toString() && mapMetadataDocument.isPrivated) {
+        console.error(`${mapMetadataDocument.owner } !== ${user._id}`)
+        return res.status(401).json({success:false, errorMessage: "Not authorized to get this map data"})
+    }
+    return res.status(200).json({success: true, mapMetadata: mapMetadataDocument.toObject()})
+}
 const updateMapPrivacy = async (req, res) => {
     const user = await findUserById(req.userId)
     if (!user) {
@@ -433,7 +449,8 @@ const MapsController = {
     publishMap,
     getMapMetadataOwnedByUser,
     getPublicMapMetadataOwnedByUser,
-    getMapData
+    getMapData,
+    getMapMetadata
 }
 
 export {MapsController}
