@@ -104,6 +104,21 @@ const getMostRecentPosts = async (req, res) => {
     }
 }
 
+const getLeastRecentPosts = async (req, res) => {
+    const limit = req.query.limit ? Number.parseInt(req.query.limit) : null
+    try {
+        const posts = await PostModel.aggregate([
+            {$sort: {createdAt: 1}},
+            {$limit: limit}
+        ])
+        return res.status(200).json({success: true, posts})
+    }
+    catch (err) {
+        console.error(err)
+        return res.status(500).json({success: false, errorMessage: `Unable to retrieve ${limit} least recent posts`})
+    }
+}
+
 const getMostLikedPosts = async (req, res) => {
     const limit = req.query.limit ? Number.parseInt(req.query.limit) : null
     try {
@@ -420,6 +435,7 @@ const PostsController = {
     commentOnPost,
     updatePostLikes,
     getMostRecentPosts,
+    getLeastRecentPosts,
     getMostLikedPosts,
     getPost,
     getPostsOwnedByUser,
