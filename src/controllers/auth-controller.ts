@@ -77,8 +77,6 @@ const loginUser = async (req, res) => {
 
         // LOGIN THE USER
         const token = auth.signToken(existingUser._id);
-        // console.log(token);
-
         res.cookie("token", token, {
             httpOnly: true,
             secure: true,
@@ -184,8 +182,73 @@ const registerUser = async (req, res) => {
     }
 }
 
+const resetPassword = async (req, res) => {
+    const body = req.body
+    // console.log(body)
+    if (!body|| !body.newPassword || !body.confirmPassword) {
+        return res.status(400).json({sucess: false, errorMessage: "Body is missing newPassword or confirmPassword"})
+    }
+
+    const { newPassword, confirmPassword } = body;
+    if (newPassword !== confirmPassword) {
+        return res.status(400).json({sucess: false, errorMessage: "Passwords do not match"})
+    }
+    if (newPassword.length < 8) {
+        return res
+            .status(400)
+            .json({
+                success: false,
+                errorMessage: "Please enter a password of at least 8 characters."
+            });
+    }
+
+    try {
+        let userId = auth.verifyUser(req);
+        if (!userId) {
+            return res.status(500).json({
+                loggedIn: false,
+                user: null,
+                errorMessage: "???"
+            })
+        }
+
+        const loggedInUser = await UserModel.findOne({ _id: userId });
+        if (!loggedInUser) {
+            return res.status(500).json({
+                loggedIn: false,
+                user: null,
+                errorMessage: "???"
+            })
+        }
+        
+        const saltRounds = 10;
+        const salt = await bcrypt.genSalt(saltRounds);
+        const passwordHash = await bcrypt.hash(newPassword, salt);
+        loggedInUser.passwordHash = passwordHash
+        await loggedInUser.save()
+
+        const token = auth.signToken(loggedInUser._id);
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: true
+        }).json({ 
+            loggedIn: true,
+            user: {
+                userName: loggedInUser.userName,
+                email: loggedInUser.email,
+                isAdmin: loggedInUser.isAdmin,
+                userId
+            }
+        })
+    } catch (err) {
+        // console.log("err: " + err);
+        return res.status(500).json(false);
+    }
+}
+
 // export default AuthController
-const AuthController = {getLoggedIn, registerUser, loginUser, logoutUser}
+const AuthController = {getLoggedIn, registerUser, loginUser, logoutUser, resetPassword}
 // export {AuthController}
 export default AuthController
 
