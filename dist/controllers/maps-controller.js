@@ -335,6 +335,7 @@ const renameMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         return res.status(500).json({ success: false, errorMessage: "Unable to edit title because " + err });
     }
 });
+// comment for commit
 const deleteMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield findUserById(req.userId);
     if (!user) {

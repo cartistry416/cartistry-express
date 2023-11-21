@@ -26,6 +26,7 @@ mapsRouter.put('/maps/:id/save', auth.verify, MapsController.saveMapEdits);
 mapsRouter.put('/maps/:id/rename', auth.verify, MapsController.renameMap);
 mapsRouter.put('/maps/:id/update-privacy', auth.verify, MapsController.updateMapPrivacy);
 mapsRouter.delete('/maps/:id', auth.verify, MapsController.deleteMap);
+// comment for commit
 export { mapsRouter };
 // module.exports = mapsRouter
 // const mapsmapsRouter = mapsRouter

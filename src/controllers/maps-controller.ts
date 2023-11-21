@@ -400,7 +400,7 @@ const renameMap = async (req, res: Response) => {
     }
 
 }
-
+  // comment for commit
 const deleteMap = async (req, res: Response) => {
     const user = await findUserById(req.userId)
 
