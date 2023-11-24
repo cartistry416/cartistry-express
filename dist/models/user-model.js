@@ -11,7 +11,8 @@ const UserSchema = new Schema({
     untitledCount: { type: Number, default: 0 },
     duplicateCount: { type: Number, default: 0 },
     isAdmin: { type: Boolean, default: false },
-    timeOfLastPasswordResetRequest: { type: Date, required: false },
+    resetPasswordToken: { type: String, required: false },
+    resetTokenExpiration: { type: Date, required: false },
 }, { timestamps: true });
 const UserModel = mongoose.model('User', UserSchema);
 export { UserModel };

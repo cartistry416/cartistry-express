@@ -7,6 +7,7 @@ router.post('/login', AuthController.loginUser);
 router.get('/logout', AuthController.logoutUser);
 router.get('/loggedIn', AuthController.getLoggedIn);
 router.post('/resetPassword', AuthController.resetPassword);
+router.post('/forgotPassword', AuthController.forgotPassword);
 // module.exports = router
 // export {router}
 const authRouter = router;

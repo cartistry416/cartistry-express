@@ -3,8 +3,10 @@ import auth from '../auth/auth.js'
 import { UserModel, UserDocument } from '../models/user-model.js'
 
 import bcrypt from 'bcryptjs'
-// const bcrypt = require('bcryptjs')
-
+import crypto from 'crypto'
+import nodemailer from 'nodemailer';
+import querystring from 'querystring'
+import https from 'https'
 
 
 const getLoggedIn = async (req, res) => {
@@ -247,8 +249,106 @@ const resetPassword = async (req, res) => {
     }
 }
 
+const forgotPassword = async (req, res)=> {
+  const { email } = req.body;
+  try {
+    const user = await UserModel.findOne({ email });
+    if (!user) {
+      return res.status(400).send('User with given email does not exist.');
+    }
+
+    const token = crypto.randomBytes(2).toString('hex'); // generates a 4-digit hex token
+    const resetToken = await bcrypt.hash(token, 10);
+    const tokenExpiration = new Date(Date.now() + 600000); // token expires in 10 min
+
+    user.resetPasswordToken = resetToken
+    user.resetTokenExpiration = tokenExpiration
+    await user.save()
+  
+    const mailOptions = {
+      from: 'cartistry416@gmail.com',
+      to: email,
+      subject: 'Password Reset Code',
+      text: `Here is your password reset code: ${resetToken}`
+    };
+
+    const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
+    const options = {
+      redirect_uri: 'https://main.d2cpsfn3mxqyu2.amplifyapp.com/',
+      client_id: process.env.CLIENT_ID,
+      response_type: 'code',
+      scope: [
+        'https://www.googleapis.com/auth/gmail.send'
+      ].join(' '),
+      access_type: 'offline',
+      include_granted_scopes: 'true',
+      state: 'state_parameter_passthrough_value' // Should be a random string
+    };
+
+    const url = `${rootUrl}?${querystring.stringify(options)}`;
+
+    const postData = querystring.stringify({
+      code: 'Your authorization code',
+      client_id: 'Your client ID',
+      client_secret: 'Your client secret',
+      redirect_uri: 'Your redirect URI',
+      grant_type: 'authorization_code'
+    });
+    
+    const options2 = {
+      hostname: 'oauth2.googleapis.com',
+      port: 443,
+      path: '/token',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': Buffer.byteLength(postData)
+      }
+    };
+    
+    // Make the request
+    const req = https.request(options2, (res) => {
+      console.log(`statusCode: ${res.statusCode}`);
+    
+      res.on('data', (d) => {
+        process.stdout.write(d);
+        // Here you will get the response which includes the access_token and refresh_token
+      });
+    });
+    
+    req.on('error', (e) => {
+      console.error(e);
+    });
+    
+    // Write the postData to the request body
+    req.write(postData);
+    req.end();
+
+    // const transporter = nodemailer.createTransport({
+    //   service: 'gmail',
+    //   auth: {
+    //     type: 'OAuth2',
+    //     user: 'cartistry416@gmail.com',
+    //     pass: process.env.EMAIL_PASS,
+    //     clientId: process.env.CLIENT_ID,
+    //     clientSecret: process.env.CLIENT_SECRET,
+    //   }
+    // });
+
+    // await transporter.sendMail(mailOptions, (err, info) =>{
+    //   if (err) {
+    //     return res.status(500).send();
+    //   }
+    // });
+
+    res.status(200).json({url: url});
+  } catch (error) {
+    res.status(500).send('Error in sending email.');
+  }
+}
+
 // export default AuthController
-const AuthController = {getLoggedIn, registerUser, loginUser, logoutUser, resetPassword}
+const AuthController = {getLoggedIn, registerUser, loginUser, logoutUser, resetPassword, forgotPassword}
 // export {AuthController}
 export default AuthController
 
