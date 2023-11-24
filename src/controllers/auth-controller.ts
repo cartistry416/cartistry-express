@@ -3,8 +3,10 @@ import auth from '../auth/auth.js'
 import { UserModel, UserDocument } from '../models/user-model.js'
 
 import bcrypt from 'bcryptjs'
-// const bcrypt = require('bcryptjs')
-
+import crypto from 'crypto'
+import nodemailer from 'nodemailer';
+// import querystring from 'querystring'
+// import https from 'https'
 
 
 const getLoggedIn = async (req, res) => {
@@ -247,8 +249,58 @@ const resetPassword = async (req, res) => {
     }
 }
 
+const forgotPassword = async (req, res)=> {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).send('Please provide your email.');
+  }
+  try {
+    const user = await UserModel.findOne({ email: email });
+    if (!user) {
+      return res.status(400).send('User with given email does not exist.');
+    }
+
+    const token = crypto.randomBytes(2).toString('hex'); // generates a 4-digit hex token
+    const resetToken = await bcrypt.hash(token, 10);
+    const tokenExpiration = new Date(Date.now() + 600000); // token expires in 10 min
+
+    user.resetPasswordToken = resetToken
+    user.resetTokenExpiration = tokenExpiration
+    await user.save()
+  
+    const mailOptions = {
+      from: 'cartistry416@gmail.com',
+      to: email,
+      subject: 'Password Reset Code',
+      text: `Here is your password reset code: ${resetToken}`
+    };
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        type: 'OAuth2',
+        user: 'cartistry416@gmail.com',
+        pass: process.env.EMAIL_PASS,
+        clientId: process.env.CLIENT_ID,
+        clientSecret: process.env.CLIENT_SECRET,
+        refreshToken: process.env.REFRESH_TOKEN,
+      }
+    });
+
+    await transporter.sendMail(mailOptions, (err, info) => {
+      if (err) {
+        return res.status(500).send();
+      }
+    });
+
+    res.status(200).json({});
+  } catch (error) {
+    res.status(500).send('Error in sending email.');
+  }
+}
+
 // export default AuthController
-const AuthController = {getLoggedIn, registerUser, loginUser, logoutUser, resetPassword}
+const AuthController = {getLoggedIn, registerUser, loginUser, logoutUser, resetPassword, forgotPassword}
 // export {AuthController}
 export default AuthController
 

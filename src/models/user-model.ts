@@ -14,7 +14,8 @@ const UserSchema = new Schema<UserDocument>({
     untitledCount: { type: Number, default: 0 },
     duplicateCount: { type: Number, default: 0 },
     isAdmin: { type: Boolean, default: false },
-    timeOfLastPasswordResetRequest: { type: Date, required: false },
+    resetPasswordToken: { type: String, required: false },
+    resetTokenExpiration: { type: Date, required: false },
   }, { timestamps: true });
 
 interface UserDocument extends Document {
@@ -27,7 +28,8 @@ interface UserDocument extends Document {
     untitledCount: number;
     duplicateCount: number;
     isAdmin: boolean;
-    timeOfLastPasswordResetRequest: Date;
+    resetPasswordToken: string;
+    resetTokenExpiration: Date;
   }
   
 const UserModel: Model<UserDocument> = mongoose.model('User', UserSchema);
