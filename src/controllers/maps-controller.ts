@@ -236,13 +236,15 @@ const getMapMetadata = async (req, res) => {
     }
 
     if (req.userId && req.userId === mapMetadataDocument.owner.toString()) {
-        console.error(`${mapMetadataDocument.owner } !== ${req.userId}`)
         return res.status(200).json({success: true, mapMetadata: mapMetadataDocument.toObject()})
+    }
+    else if (req.userId) {
+        console.error(`${req.userId} !== ${mapMetadataDocument.owner.toString()}`)
     }
 
     if (mapMetadataDocument.isPrivated) {
         //console.error(`${mapMetadataDocument.owner } !== ${user._id}`)
-        return res.status(401).json({success:false, errorMessage: "Not authorized to get this map data"})
+        return res.status(401).json({success:false, errorMessage: "Not authorized to get this map data (it is privated)"})
     }
     return res.status(200).json({success: true, mapMetadata: mapMetadataDocument.toObject()})
 }
