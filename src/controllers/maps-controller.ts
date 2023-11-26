@@ -200,17 +200,18 @@ const getPublicMapMetadataOwnedByUser = async (req, res) => {
 }
 const getMapData = async (req, res: Response) => {
 
-    const user = await findUserById(req.userId)
-    if (!user) {
-        return res.status(500).json({success: false, errorMessage: "Unable to find user"})
-    }
     const mapMetadataDocument = await MapMetadataModel.findById(req.params.id)
     if (!mapMetadataDocument) {
         return res.status(404).json({success:false, errorMessage: "Unable to find mapMetadata"})
     }
-    if (mapMetadataDocument.owner.toString() !== user._id.toString() && mapMetadataDocument.isPrivated) {
-        //console.error(`${mapMetadataDocument.owner } !== ${user._id}`)
-        return res.status(401).json({success:false, errorMessage: "Not authorized to get this map data"})
+
+    if (mapMetadataDocument.isPrivated) {
+        if (!req.userId) { // guest cannot access private map
+            return res.status(401).json({success:false, errorMessage: "Not authorized to get this map data"})
+        }
+        else if (req.userId !== mapMetadataDocument.owner.toString()) { // logged in cannot access
+            return res.status(401).json({success:false, errorMessage: "Not authorized to get this map data"})
+        }
     }
     const mapDataDocument = await MapDataModel.findById(mapMetadataDocument.mapData)
     
@@ -235,17 +236,16 @@ const getMapMetadata = async (req, res) => {
         return res.status(404).json({success:false, errorMessage: "Unable to find mapMetadata"})
     }
 
-    if (req.userId && req.userId === mapMetadataDocument.owner.toString()) {
-        return res.status(200).json({success: true, mapMetadata: mapMetadataDocument.toObject()})
-    }
-    else if (req.userId) {
-        console.error(`${req.userId} !== ${mapMetadataDocument.owner.toString()}`)
+    if (mapMetadataDocument.isPrivated) {
+        if (!req.userId) { // guest cannot access private map
+            return res.status(401).json({success:false, errorMessage: "Not authorized to get this map data"})
+        }
+        else if (req.userId !== mapMetadataDocument.owner.toString()) { // logged in cannot access
+            return res.status(401).json({success:false, errorMessage: "Not authorized to get this map data"})
+        }
     }
 
-    if (mapMetadataDocument.isPrivated) {
-        //console.error(`${mapMetadataDocument.owner } !== ${user._id}`)
-        return res.status(401).json({success:false, errorMessage: "Not authorized to get this map data (it is privated)"})
-    }
+
     return res.status(200).json({success: true, mapMetadata: mapMetadataDocument.toObject()})
 }
 
