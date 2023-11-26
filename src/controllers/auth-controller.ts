@@ -1,7 +1,7 @@
 // const auth = require('../auth')
 import auth from '../auth/auth.js'
 import { UserModel, UserDocument } from '../models/user-model.js'
-
+import * as EmailValidator from 'email-validator';
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 import nodemailer from 'nodemailer';
@@ -113,11 +113,13 @@ const registerUser = async (req, res) => {
         const { userName, email, password, passwordVerify } = req.body;
         //console.log("create user: " + userName + " " + email + " " + password + " " + passwordVerify);
         if (!userName || !email || !password || !passwordVerify) {
-            return res
-                .status(400)
-                .json({ success: false,
-                    errorMessage: "Please enter all required fields." });
+            return res.status(400).json({ success: false, errorMessage: "Please enter all required fields." });
         }
+
+        if (!EmailValidator.validate(email)) {
+            return res.status(400).json({success: false, errorMessage: "Invalid email: " + email})
+        }
+
         //console.log("all fields provided");
         if (password.length < 8) {
             return res
