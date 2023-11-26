@@ -9,8 +9,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import { UserModel } from '../models/user-model.js'; // Import the User model and UserDocument
 import { PostModel } from '../models/post-model.js'; // Import the Post model and PostDocument
+import { MapMetadataModel } from '../models/mapMetadata-model.js'; // Import the MapMetadata model and MapMetadataDocument
 import { findUserById } from '../utils/utils.js';
-import mongoose from 'mongoose';
 function extractPostCardInfo(posts) {
     const extractedPosts = posts.map(post => {
         const { title, owner, ownerUserName, thumbnail, likes, forks, tags, mapMetadata, _id, createdAt, updatedAt } = post;
@@ -160,8 +160,13 @@ const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     let post;
     try {
         if (body.mapMetadataId && body.mapMetadataId !== "") {
-            const mapMetadata = mongoose.Types.ObjectId(body.mapMetadataId);
-            post = yield PostModel.create({ owner: req.userId, ownerUserName: user.userName, title: body.title, textContent: body.textContent, tags, images, mapMetadata });
+            const mapMetadataDocument = yield MapMetadataModel.findById(body.mapMetadataId);
+            if (mapMetadataDocument.owner.toString() !== req.userId) {
+                return res.status(401).json({ success: false, errorMessage: "Unauthorized to publish this map" });
+            }
+            mapMetadataDocument.isPrivated = false;
+            yield mapMetadataDocument.save();
+            post = yield PostModel.create({ owner: req.userId, ownerUserName: user.userName, title: body.title, textContent: body.textContent, tags, images, mapMetadata: mapMetadataDocument._id });
         }
         else {
             post = yield PostModel.create({ owner: req.userId, ownerUserName: user.userName, title: body.title, textContent: body.textContent, tags, images });
@@ -240,10 +245,10 @@ const deletePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
 });
 const commentOnPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const body = req.body;
-    if (!body) {
+    if (!body || !body.comment) {
         return res.status(400).json({
             success: false,
-            error: 'You must provide a body',
+            error: 'You must provide a body with a comment',
         });
     }
     let user = yield findUserById(req.userId);
@@ -255,8 +260,7 @@ const commentOnPost = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     }
     const newComment = {
         authorUserName: user.userName,
-        comment: body.comment,
-        publishDate: new Date(Date.now())
+        comment: body.comment
     };
     const post = yield PostModel.findById(req.params.id);
     if (!post) {

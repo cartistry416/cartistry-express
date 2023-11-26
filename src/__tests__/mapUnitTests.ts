@@ -4,7 +4,7 @@ import {app} from '../app.js'
 
 import { randomBytes } from 'crypto'
 import { bufferToZip, zipToBuffer } from '../utils/utils.js'
-import { promises as fs, stat } from 'fs'
+import { promises as fs } from 'fs'
 
 
 import path from 'path'
@@ -13,7 +13,6 @@ const req = request(app)
 
 let server;
 describe('MapsController tests', () => {
-    const testPath = path.join(__dirname, `../../GeoJSONZipFilesTest`)
     let token = null;
     let res = null;
     let userId;
@@ -39,32 +38,11 @@ describe('MapsController tests', () => {
         expect(res.status).toBe(200)
         token = res.headers['set-cookie']
         userId = res.body.user.userId
-        
-        // try {
-        //     const stats = await fs.stat(testPath)
-        //     if (stats.isDirectory()) {
-
-        //     }
-        // }
-        // catch (err) {
-        //     if (err.code === 'ENOENT') {
-        //         await fs.mkdir(testPath) 
-        //     }
-        // }
     })
 
     afterAll(async () => {
         await disconnectDB()
         server.close()
-
-        // try {
-        //     await fs.rm(testPath, { recursive: true })
-        
-        // }
-        // catch (err) {
-        //     console.error("Unable to remove temp directory used for unit tests: " + err)
-        // }
-
     })
 
 

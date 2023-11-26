@@ -17,7 +17,6 @@ const postSchema = new mongoose.Schema<PostDocument>({
     {
       authorUserName: String,
       comment: String,
-      publishDate: { type: Date },
     },
   ],
   images: [
@@ -51,7 +50,6 @@ interface PostDocument extends Document {
 interface Comment {
   authorUserName: string;
   comment: string;
-  publishDate: Date;
 }
 
 interface Image {

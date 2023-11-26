@@ -13,7 +13,6 @@ const postSchema = new mongoose.Schema({
         {
             authorUserName: String,
             comment: String,
-            publishDate: { type: Date },
         },
     ],
     images: [

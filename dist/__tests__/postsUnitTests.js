@@ -87,12 +87,6 @@ describe('PostsController tests', () => {
             expect(res.status).toBe(200);
             expect(res.body.comments[0].comment).toBe(comment);
         }));
-        it('editing comment', () => __awaiter(void 0, void 0, void 0, function* () {
-            const comment = "NEVERMIND, I think your map could do better :)";
-            res = yield req.put(`/posts-api/posts/${postId1}/edit-comment`).send({ comment, index: 0 }).set('Cookie', token);
-            expect(res.status).toBe(200);
-            expect(res.body.comments[0].comment).toBe(comment);
-        }));
         it('deleting comment', () => __awaiter(void 0, void 0, void 0, function* () {
             res = yield req.delete(`/posts-api/posts/${postId1}/comment`).send({ index: 0 }).set('Cookie', token);
             expect(res.status).toBe(200);

@@ -2,7 +2,6 @@ import { UserModel, UserDocument } from '../models/user-model.js'; // Import the
 import { PostModel, PostDocument } from '../models/post-model.js'; // Import the Post model and PostDocument
 import { MapMetadataModel, MapMetadataDocument } from '../models/mapMetadata-model.js'; // Import the MapMetadata model and MapMetadataDocument
 import { findUserById } from '../utils/utils.js';
-import mongoose from 'mongoose'
 
 
 
@@ -176,8 +175,15 @@ const createPost = async (req, res) => {
     let post;
     try {
         if (body.mapMetadataId && body.mapMetadataId !== "") {
-            const mapMetadata = mongoose.Types.ObjectId(body.mapMetadataId)
-            post = await PostModel.create({owner: req.userId, ownerUserName: user.userName, title: body.title, textContent: body.textContent, tags, images, mapMetadata})
+
+
+            const mapMetadataDocument = await MapMetadataModel.findById(body.mapMetadataId)
+            if (mapMetadataDocument.owner.toString() !== req.userId) {
+                return res.status(401).json({success: false, errorMessage: "Unauthorized to publish this map"})
+            }
+            mapMetadataDocument.isPrivated = false
+            await mapMetadataDocument.save()
+            post = await PostModel.create({owner: req.userId, ownerUserName: user.userName, title: body.title, textContent: body.textContent, tags, images, mapMetadata: mapMetadataDocument._id})
         }
         else {
             post = await PostModel.create({owner: req.userId, ownerUserName: user.userName, title: body.title, textContent: body.textContent, tags, images})
@@ -269,10 +275,10 @@ const deletePost = async (req, res) => {
 
 const commentOnPost = async (req, res) => {
     const body = req.body;
-    if (!body) {
+    if (!body || !body.comment) {
         return res.status(400).json({
             success: false,
-            error: 'You must provide a body',
+            error: 'You must provide a body with a comment',
         })
     }
 
@@ -286,8 +292,7 @@ const commentOnPost = async (req, res) => {
 
     const newComment = {
         authorUserName: user.userName,
-        comment: body.comment,
-        publishDate: new Date(Date.now())
+        comment: body.comment
     }
 
    const post = await PostModel.findById(req.params.id)

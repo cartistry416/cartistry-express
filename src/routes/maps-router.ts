@@ -18,14 +18,14 @@ mapsRouter.post('/maps/upload', auth.verify, upload.single('zipFile'), MapsContr
 
 mapsRouter.get('/maps/:id/export', MapsController.exportMap)
 mapsRouter.get('/maps/map-metadata', auth.verify, MapsController.getMapMetadataOwnedByUser)
-mapsRouter.get('/maps/single-map-metadata/:id', auth.verify, MapsController.getMapMetadata)
+mapsRouter.get('/maps/single-map-metadata/:id', MapsController.getMapMetadata)
 mapsRouter.get('/maps/public-map-metadata/:userId', MapsController.getPublicMapMetadataOwnedByUser)
 mapsRouter.get('/maps/:id', auth.verify, MapsController.getMapData)
 
 
 mapsRouter.post('/maps/upload', auth.verify, upload.single('zipFile'), MapsController.uploadMap)
 mapsRouter.post('/maps/:id/fork', auth.verify, MapsController.forkMap)
-mapsRouter.post('/maps/:id/publish', auth.verify, MapsController.publishMap)
+//mapsRouter.post('/maps/:id/publish', auth.verify, MapsController.publishMap)
 
 
 mapsRouter.put('/maps/:id/favorite', auth.verify, MapsController.favoriteMap)

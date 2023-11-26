@@ -7,7 +7,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { PostModel } from '../models/post-model.js';
 import { MapMetadataModel } from '../models/mapMetadata-model.js';
 import { MapDataModel } from '../models/mapData-model.js';
 import mongoose from 'mongoose';
@@ -76,6 +75,9 @@ const forkMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const originalMapMetaDataDocument = yield MapMetadataModel.findById(req.params.id);
         if (!originalMapMetaDataDocument) {
             return res.status(404).json({ success: false, errorMessage: "Unable to find mapMetadata from provided id" });
+        }
+        if (originalMapMetaDataDocument.owner.toString() !== req.userId && originalMapMetaDataDocument.isPrivated) {
+            return res.status(401).json({ success: false, errorMessage: "Unauthorized to fork this map" });
         }
         let originalMapDataId = originalMapMetaDataDocument.mapData.toString();
         const originalMapDataDocument = yield MapDataModel.findById(originalMapDataId);
@@ -170,7 +172,7 @@ const getMapData = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         return res.status(404).json({ success: false, errorMessage: "Unable to find mapMetadata" });
     }
     if (mapMetadataDocument.owner.toString() !== user._id.toString() && mapMetadataDocument.isPrivated) {
-        console.error(`${mapMetadataDocument.owner} !== ${user._id}`);
+        //console.error(`${mapMetadataDocument.owner } !== ${user._id}`)
         return res.status(401).json({ success: false, errorMessage: "Not authorized to get this map data" });
     }
     const mapDataDocument = yield MapDataModel.findById(mapMetadataDocument.mapData);
@@ -188,16 +190,12 @@ const getMapData = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
 });
 const getMapMetadata = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const user = yield findUserById(req.userId);
-    if (!user) {
-        return res.status(500).json({ success: false, errorMessage: "Unable to find user" });
-    }
     const mapMetadataDocument = yield MapMetadataModel.findById(req.params.id);
     if (!mapMetadataDocument) {
         return res.status(404).json({ success: false, errorMessage: "Unable to find mapMetadata" });
     }
-    if (mapMetadataDocument.owner.toString() !== user._id.toString() && mapMetadataDocument.isPrivated) {
-        console.error(`${mapMetadataDocument.owner} !== ${user._id}`);
+    if (mapMetadataDocument.isPrivated) {
+        //console.error(`${mapMetadataDocument.owner } !== ${user._id}`)
         return res.status(401).json({ success: false, errorMessage: "Not authorized to get this map data" });
     }
     return res.status(200).json({ success: true, mapMetadata: mapMetadataDocument.toObject() });
@@ -212,7 +210,7 @@ const updateMapPrivacy = (req, res) => __awaiter(void 0, void 0, void 0, functio
         return res.status(404).json({ success: false, errorMessage: "Unable to find mapMetadata" });
     }
     if (mapMetadata.owner.toString() !== user._id.toString()) {
-        console.log(`${mapMetadata.owner} !== ${user._id}`);
+        //console.error(`${mapMetadata.owner } !== ${user._id}`)
         return res.status(401).json({ success: false, errorMessage: "Not authorized to change privacy status of this map metadata" });
     }
     mapMetadata.isPrivated = !mapMetadata.isPrivated;
@@ -240,7 +238,7 @@ const saveMapEdits = (req, res) => __awaiter(void 0, void 0, void 0, function* (
     try {
         const mapMetaDataDocument = yield MapMetadataModel.findById(mapId);
         if (mapMetaDataDocument.owner.toString() !== user._id.toString()) {
-            return res.status(401).json({ success: false, errorMessage: "Unauthorized to create post from this map" });
+            return res.status(401).json({ success: false, errorMessage: "Unauthorized to save this map" });
         }
         const mapDataDocument = yield MapDataModel.findById(mapMetaDataDocument.mapData);
         const geoJSONZip = yield gridFSToZip(mapDataDocument.geoJSONZipId);
@@ -259,40 +257,40 @@ const saveMapEdits = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         return res.status(500).json({ success: false, errorMessage: "Unable to perform one of the following: read from gridfs, perform patching, write to gridfs: " + err });
     }
 });
-const publishMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const body = req.body;
-    if (!body || !body.title || !body.textContent || !body.tags) {
-        return res.status(400).json({
-            success: false,
-            error: 'You must provide title and textContent and tags in body',
-        });
-    }
-    const user = yield findUserById(req.userId);
-    if (!user) {
-        return res.status(500).json({ success: false, errorMessage: "Unable to find user" });
-    }
-    const mapId = req.params.id;
-    try {
-        const mapMetaDataDocument = yield MapMetadataModel.findById(mapId);
-        if (mapMetaDataDocument.owner.toString() !== user._id.toString()) {
-            return res.status(401).json({ success: false, errorMessage: "Unauthorized to create post from this map" });
-        }
-        yield MapMetadataModel.findByIdAndUpdate(mapId, { isPrivated: false });
-        const post = yield PostModel.create({ owner: req.userId,
-            ownerUserName: user.userName,
-            title: body.title,
-            textContent: body.textContent,
-            mapMetadata: mapId,
-            tags: body.tags });
-        if (!post) {
-            return res.status(500).json({ success: false, errorMessage: "Unable to create post" });
-        }
-        return res.status(200).json({ success: true, postId: post._id });
-    }
-    catch (err) {
-        return res.status(500).json({ success: false, errorMessage: "Unable to create post because " + err });
-    }
-});
+// const publishMap = async (req, res: Response) => {
+//     const body = req.body
+//     if (!body || !body.title || !body.textContent || !body.tags) {
+//         return res.status(400).json({
+//             success: false,
+//             error: 'You must provide title and textContent and tags in body',
+//         })
+//     }
+//     const user = await findUserById(req.userId)
+//     if (!user) {
+//         return res.status(500).json({success: false, errorMessage: "Unable to find user"})
+//     }
+//     const mapId = req.params.id
+//     try {
+//         const mapMetaDataDocument = await MapMetadataModel.findById(mapId)
+//         if(mapMetaDataDocument.owner.toString() !== user._id.toString()) {
+//             return res.status(401).json({success:false, errorMessage:"Unauthorized to create post from this map"})
+//         }
+//         await MapMetadataModel.findByIdAndUpdate(mapId, {isPrivated: false})
+//         const post = await PostModel.create({owner: req.userId, 
+//                                             ownerUserName: user.userName, 
+//                                             title: body.title, 
+//                                             textContent: body.textContent, 
+//                                             mapMetadata: mapId,
+//                                             tags: body.tags})
+//         if (!post) {
+//             return res.status(500).json({ success: false, errorMessage: "Unable to create post"})
+//         }
+//         return res.status(200).json({success:true, postId: post._id})
+//     }
+//     catch (err) {
+//         return res.status(500).json({ success: false, errorMessage: "Unable to create post because " + err})
+//     }
+// }
 const favoriteMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield findUserById(req.userId);
     if (!user) {
@@ -344,7 +342,7 @@ const deleteMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const mapMetaDataDocument = yield MapMetadataModel.findById(req.params.id);
         if (mapMetaDataDocument.owner.toString() !== user._id.toString()) {
-            return res.status(401).json({ success: false, errorMessage: "Unauthorized to edit title for this map" });
+            return res.status(401).json({ success: false, errorMessage: "Unauthorized to delete this map" });
         }
         const mapMetaDataDocumentId = mapMetaDataDocument._id.toString();
         const mapDataDocumentId = mapMetaDataDocument.mapData;
@@ -374,10 +372,10 @@ const MapsController = {
     deleteMap,
     updateMapPrivacy,
     saveMapEdits,
-    publishMap,
     getMapMetadataOwnedByUser,
     getPublicMapMetadataOwnedByUser,
     getMapData,
-    getMapMetadata
+    getMapMetadata,
+    //publishMap,
 };
 export { MapsController };

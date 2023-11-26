@@ -2,12 +2,7 @@ import request from 'supertest'
 import { connectDB, disconnectDB} from '../db/db.js'
 import {app} from '../app.js'
 import { randomBytes } from 'crypto'
-import auth from '../auth/auth.js'
-import { UserModel } from '../models/user-model.js'
 const req = request(app)
-import {Request} from 'express'
-import { text } from 'stream/consumers'
-import { setTimeout } from 'timers/promises'
 let server;
 
 
@@ -88,13 +83,6 @@ describe('PostsController tests', () => {
         it('commenting on created post', async () => {
             const comment = "HELLO I AM COMMENTING, COOL MAP!!"
             res = await req.put(`/posts-api/posts/${postId1}/comment`).send({comment}).set('Cookie', token)
-            expect(res.status).toBe(200)
-            expect(res.body.comments[0].comment).toBe(comment)
-        })
-
-        it('editing comment', async () => {
-            const comment = "NEVERMIND, I think your map could do better :)"
-            res = await req.put(`/posts-api/posts/${postId1}/edit-comment`).send({comment, index: 0}).set('Cookie', token)
             expect(res.status).toBe(200)
             expect(res.body.comments[0].comment).toBe(comment)
         })
