@@ -31,6 +31,23 @@ const verify = (req, res, next) => {
     }
 }
 
+const optionalVerify = (req, res, next) => {
+    try {
+        const token = req.cookies.token;
+        if (!token) {
+            next();
+            return
+        }
+
+        const verified = jwt.verify(token, process.env.JWT_SECRET)
+        req.userId = verified.userId;
+        next();
+    } catch (err) {
+        req.userId = null;
+        next();
+    }
+}
+
 const verifyUser = (req) => {
     try {
         const token = req.cookies.token;
@@ -54,7 +71,8 @@ const signToken = (userId) => {
 const auth = {
     verify,
     verifyUser,
-    signToken
+    signToken,
+    optionalVerify
 }
 // module.exports = auth;
 export default auth

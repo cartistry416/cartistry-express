@@ -234,6 +234,11 @@ const getMapMetadata = async (req, res) => {
     if (!mapMetadataDocument) {
         return res.status(404).json({success:false, errorMessage: "Unable to find mapMetadata"})
     }
+
+    if (req.userId && req.userId === mapMetadataDocument.owner.toString()) {
+        return res.status(200).json({success: true, mapMetadata: mapMetadataDocument.toObject()})
+    }
+
     if (mapMetadataDocument.isPrivated) {
         //console.error(`${mapMetadataDocument.owner } !== ${user._id}`)
         return res.status(401).json({success:false, errorMessage: "Not authorized to get this map data"})
