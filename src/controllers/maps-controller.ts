@@ -236,6 +236,7 @@ const getMapMetadata = async (req, res) => {
     }
 
     if (req.userId && req.userId === mapMetadataDocument.owner.toString()) {
+        console.error(`${mapMetadataDocument.owner } !== ${req.userId}`)
         return res.status(200).json({success: true, mapMetadata: mapMetadataDocument.toObject()})
     }
 
