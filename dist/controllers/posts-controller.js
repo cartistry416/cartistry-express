@@ -135,20 +135,13 @@ const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     let tags = [];
     if (body.tags) {
         tags = body.tags.split(',').map(tag => tag.trim());
-        // console.log(tags)
     }
     let result = null;
     let files = req.files ? req.files : [];
-    let fileExtensions = body.fileExtensions ? body.fileExtensions.split(',') : [];
+    let fileExtensions = body.fileExtensions ? body.fileExtensions : [];
     let images = [];
     if (files.length > 0) {
-        if (!body.fileExtensions || fileExtensions.length !== files.length) {
-            return res.status(400).json({
-                success: false,
-                errorMssage: 'You must provide fileExtensions with length equal to number of files uploaded',
-            });
-        }
-        images = files.map((file, index) => { return { imageData: file.buffer, contentType: body.fileExtensions[index] }; });
+        images = files.map((file, index) => { return { imageData: file.buffer, contentType: file.mimetype }; });
     }
     const user = yield findUserById(req.userId);
     if (!user) {

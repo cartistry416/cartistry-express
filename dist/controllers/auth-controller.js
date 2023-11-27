@@ -242,7 +242,7 @@ const resetPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* 
 const forgotPassword = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { email } = req.body;
     if (!email) {
-        return res.status(400).send('Please provide your email.');
+        return res.status(400).json({ sucess: false, errorMessage: "Please provide your email." });
     }
     try {
         const user = yield UserModel.findOne({ email: email });
@@ -274,13 +274,13 @@ const forgotPassword = (req, res) => __awaiter(void 0, void 0, void 0, function*
         });
         yield transporter.sendMail(mailOptions, (err, info) => {
             if (err) {
-                return res.status(500).send();
+                return res.status(500).json({ sucess: false, errorMessage: "Unable to send email" });
             }
         });
-        res.status(200).json({});
+        return res.status(200).json({ sucess: true });
     }
     catch (error) {
-        res.status(500).send('Error in sending email.');
+        return res.status(500).json({ sucess: false, errorMessage: "Unable to send email" });
     }
 });
 // export default AuthController
