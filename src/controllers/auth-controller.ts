@@ -254,7 +254,7 @@ const resetPassword = async (req, res) => {
 const forgotPassword = async (req, res)=> {
   const { email } = req.body;
   if (!email) {
-    return res.status(400).send('Please provide your email.');
+    return res.status(400).json({sucess: false, errorMessage: "Please provide your email."})
   }
   try {
     const user = await UserModel.findOne({ email: email });
@@ -291,13 +291,13 @@ const forgotPassword = async (req, res)=> {
 
     await transporter.sendMail(mailOptions, (err, info) => {
       if (err) {
-        return res.status(500).send();
+        return res.status(500).json({sucess: false, errorMessage: "Unable to send email"})
       }
     });
 
-    res.status(200).json({});
+    return res.status(200).json({sucess: true})
   } catch (error) {
-    res.status(500).send('Error in sending email.');
+    return res.status(500).json({sucess: false, errorMessage: "Unable to send email"})
   }
 }
 
