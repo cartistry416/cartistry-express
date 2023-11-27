@@ -11,10 +11,12 @@ import { UserModel } from '../models/user-model.js'; // Import the User model an
 import { PostModel } from '../models/post-model.js'; // Import the Post model and PostDocument
 import { MapMetadataModel } from '../models/mapMetadata-model.js'; // Import the MapMetadata model and MapMetadataDocument
 import { findUserById } from '../utils/utils.js';
+import sharp from 'sharp';
 function extractPostCardInfo(posts) {
     const extractedPosts = posts.map(post => {
         const { title, owner, ownerUserName, thumbnail, likes, forks, tags, mapMetadata, _id, createdAt, updatedAt } = post;
-        return { title, owner, ownerUserName, thumbnail, likes, forks, tags, mapMetadata, _id, createdAt, updatedAt };
+        const numComments = post.comments.length;
+        return { title, owner, ownerUserName, thumbnail, likes, forks, tags, mapMetadata, _id, createdAt, updatedAt, numComments };
     });
     return extractedPosts;
 }
@@ -89,7 +91,7 @@ const getMostRecentPosts = (req, res) => __awaiter(void 0, void 0, void 0, funct
             { $sort: { createdAt: -1 } },
             { $limit: limit }
         ]);
-        return res.status(200).json({ success: true, posts });
+        return res.status(200).json({ success: true, posts: extractPostCardInfo(posts) });
     }
     catch (err) {
         console.error(err);
@@ -103,7 +105,7 @@ const getLeastRecentPosts = (req, res) => __awaiter(void 0, void 0, void 0, func
             { $sort: { createdAt: 1 } },
             { $limit: limit }
         ]);
-        return res.status(200).json({ success: true, posts });
+        return res.status(200).json({ success: true, posts: extractPostCardInfo(posts) });
     }
     catch (err) {
         console.error(err);
@@ -138,10 +140,16 @@ const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
     let result = null;
     let files = req.files ? req.files : [];
-    let fileExtensions = body.fileExtensions ? body.fileExtensions : [];
     let images = [];
     if (files.length > 0) {
         images = files.map((file, index) => { return { imageData: file.buffer, contentType: file.mimetype }; });
+    }
+    let thumbnail = null;
+    if (images.length > 0) {
+        const resizedBuffer = yield sharp(images[0].imageData)
+            .resize(200, 200)
+            .toBuffer();
+        thumbnail = { imageData: resizedBuffer, contentType: images[0].contentType };
     }
     const user = yield findUserById(req.userId);
     if (!user) {
@@ -159,10 +167,10 @@ const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             }
             mapMetadataDocument.isPrivated = false;
             yield mapMetadataDocument.save();
-            post = yield PostModel.create({ owner: req.userId, ownerUserName: user.userName, title: body.title, textContent: body.textContent, tags, images, mapMetadata: mapMetadataDocument._id });
+            post = yield PostModel.create({ owner: req.userId, thumbnail, ownerUserName: user.userName, title: body.title, textContent: body.textContent, tags, images, mapMetadata: mapMetadataDocument._id });
         }
         else {
-            post = yield PostModel.create({ owner: req.userId, ownerUserName: user.userName, title: body.title, textContent: body.textContent, tags, images });
+            post = yield PostModel.create({ owner: req.userId, thumbnail, ownerUserName: user.userName, title: body.title, textContent: body.textContent, tags, images });
         }
         if (!post) {
             return res.status(500).json({ success: false, errorMessage: "Unable to create post" });
@@ -326,7 +334,7 @@ const updatePostLikes = (req, res) => __awaiter(void 0, void 0, void 0, function
             return res.status(500).json({ success: false, errorMessage: "Unable to remove from users liked posts" });
         }
     }
-    post = yield PostModel.findByIdAndUpdate(req.params.id, { $inc: { likes: 1 } });
+    post = yield PostModel.findByIdAndUpdate(req.params.id, { $inc: { likes: 1 } }, { new: true });
     if (!post) {
         return res.status(404).json({ success: false, errorMessage: "Unable to increment like" });
     }

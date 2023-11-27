@@ -90,7 +90,8 @@ const loginUser = async (req, res) => {
                 email: existingUser.email,
                 isAdmin: existingUser.isAdmin,
                 userId: existingUser._id         
-            }
+            },
+            likedPosts: existingUser.likedPosts      
         })
 
     } catch (err) {
@@ -177,8 +178,8 @@ const registerUser = async (req, res) => {
                 userName: savedUser.userName,
                 email: savedUser.email,
                 isAdmin: savedUser.isAdmin,
-                userId: savedUser._id          
-            }
+                userId: savedUser._id,    
+            },
         })
     } catch (err) {
         console.error(err);

@@ -91,7 +91,8 @@ const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 email: existingUser.email,
                 isAdmin: existingUser.isAdmin,
                 userId: existingUser._id
-            }
+            },
+            likedPosts: existingUser.likedPosts
         });
     }
     catch (err) {
@@ -170,8 +171,8 @@ const registerUser = (req, res) => __awaiter(void 0, void 0, void 0, function* (
                 userName: savedUser.userName,
                 email: savedUser.email,
                 isAdmin: savedUser.isAdmin,
-                userId: savedUser._id
-            }
+                userId: savedUser._id,
+            },
         });
     }
     catch (err) {
