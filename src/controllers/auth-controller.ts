@@ -1,12 +1,14 @@
 // const auth = require('../auth')
 import auth from '../auth/auth.js'
 import { UserModel, UserDocument } from '../models/user-model.js'
-import * as EmailValidator from 'email-validator';
+
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 import nodemailer from 'nodemailer';
-// import querystring from 'querystring'
-// import https from 'https'
+import querystring from 'querystring'
+import https from 'https'
+import { google } from 'googleapis';
+const { OAuth2 } = google.auth;
 
 
 const getLoggedIn = async (req, res) => {
@@ -90,8 +92,7 @@ const loginUser = async (req, res) => {
                 email: existingUser.email,
                 isAdmin: existingUser.isAdmin,
                 userId: existingUser._id         
-            },
-            likedPosts: existingUser.likedPosts      
+            }
         })
 
     } catch (err) {
@@ -114,13 +115,11 @@ const registerUser = async (req, res) => {
         const { userName, email, password, passwordVerify } = req.body;
         //console.log("create user: " + userName + " " + email + " " + password + " " + passwordVerify);
         if (!userName || !email || !password || !passwordVerify) {
-            return res.status(400).json({ success: false, errorMessage: "Please enter all required fields." });
+            return res
+                .status(400)
+                .json({ success: false,
+                    errorMessage: "Please enter all required fields." });
         }
-
-        if (!EmailValidator.validate(email)) {
-            return res.status(400).json({success: false, errorMessage: "Invalid email: " + email})
-        }
-
         //console.log("all fields provided");
         if (password.length < 8) {
             return res
@@ -178,8 +177,8 @@ const registerUser = async (req, res) => {
                 userName: savedUser.userName,
                 email: savedUser.email,
                 isAdmin: savedUser.isAdmin,
-                userId: savedUser._id,    
-            },
+                userId: savedUser._id          
+            }
         })
     } catch (err) {
         console.error(err);
@@ -191,12 +190,12 @@ const resetPassword = async (req, res) => {
     const body = req.body
     // console.log(body)
     if (!body|| !body.newPassword || !body.confirmPassword) {
-        return res.status(400).json({sucess: false, errorMessage: "Body is missing newPassword or confirmPassword"})
+        return res.status(400).json({success: false, errorMessage: "Body is missing newPassword or confirmPassword"})
     }
 
     const { newPassword, confirmPassword } = body;
     if (newPassword !== confirmPassword) {
-        return res.status(400).json({sucess: false, errorMessage: "Passwords do not match"})
+        return res.status(400).json({success: false, errorMessage: "Passwords do not match"})
     }
     if (newPassword.length < 8) {
         return res
@@ -252,20 +251,20 @@ const resetPassword = async (req, res) => {
     }
 }
 
-const forgotPassword = async (req, res)=> {
+const requestPasswordToken = async (req, res)=> {
   const { email } = req.body;
   if (!email) {
-    return res.status(400).json({sucess: false, errorMessage: "Please provide your email."})
+    return res.status(400).json({success: false, errorMessage: "Please provide your email."})
   }
   try {
     const user = await UserModel.findOne({ email: email });
     if (!user) {
-      return res.status(400).send('User with given email does not exist.');
+      return res.status(400).json({success: false, errorMessage: 'User with given email does not exist.'});
     }
 
     const token = crypto.randomBytes(2).toString('hex'); // generates a 4-digit hex token
     const resetToken = await bcrypt.hash(token, 10);
-    const tokenExpiration = new Date(Date.now() + 600000); // token expires in 10 min
+    const tokenExpiration = Date.now() + 600000; // token expires in 10 min
 
     user.resetPasswordToken = resetToken
     user.resetTokenExpiration = tokenExpiration
@@ -274,36 +273,144 @@ const forgotPassword = async (req, res)=> {
     const mailOptions = {
       from: 'cartistry416@gmail.com',
       to: email,
-      subject: 'Password Reset Code',
-      text: `Here is your password reset code: ${resetToken}`
+      subject: 'Cartistry One Time Token',
+      text: `Dear Map Enthusiast,\nHere is your one time reset code: ${token}`
     };
 
+    const oauth2Client = new OAuth2(
+      process.env.CLIENT_ID,
+      process.env.CLIENT_SECRET,
+      "https://developers.google.com/oauthplayground"
+    );
+
+    oauth2Client.setCredentials({
+      refresh_token: process.env.REFRESH_TOKEN,
+    });
+
+    const accessToken = await new Promise((resolve, reject) => {
+      oauth2Client.getAccessToken((err, token) => {
+        if (err) {
+          console.log("*ERR: ", err)
+          reject();
+        }
+        resolve(token); 
+      });
+    });
+
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      service: "gmail",
       auth: {
-        type: 'OAuth2',
+        type: "OAuth2",
         user: 'cartistry416@gmail.com',
-        pass: process.env.EMAIL_PASS,
+        accessToken,
         clientId: process.env.CLIENT_ID,
         clientSecret: process.env.CLIENT_SECRET,
         refreshToken: process.env.REFRESH_TOKEN,
-      }
+      },
     });
 
-    await transporter.sendMail(mailOptions, (err, info) => {
-      if (err) {
-        return res.status(500).json({sucess: false, errorMessage: "Unable to send email"})
-      }
+    await transporter.sendMail(mailOptions, (error, info) => {  
+      if (error) {
+        console.log(error);
+      } else {
+          console.log("Message sent: %s", info.messageId);
+        }
     });
 
-    return res.status(200).json({sucess: true})
+    return res.status(200).json({success: true, token: token})
   } catch (error) {
-    return res.status(500).json({sucess: false, errorMessage: "Unable to send email"})
+    res.status(500).json({success: false, errorMessage: 'Error in sending email.'});
+  }
+}
+
+const verifyToken = async (req, res) => {
+  const { email, token } = req.body
+  if (!token) {
+    return res.status(400).json({success: false, errorMessage: "Please provide your token."})
+  }
+  if (!email) {
+    return res.status(400).json({success: false, errorMessage: "Please provide your email."})
+  }
+  try {
+    const user = await UserModel.findOne({ email: email });
+    const tokenCorrect = await bcrypt.compare(token, user.resetPasswordToken)
+    if (!tokenCorrect) {
+      return res.status(400).json({success: false, errorMessage: "Incorrect Token."})
+    }
+    if (Date.now() > user.resetTokenExpiration){
+      return res.status(400).json({success: false, errorMessage: "Token is expired."})
+    }
+    res.status(200).json({success: true})
+  } catch (error) {
+    res.status(500).json({success: false, errorMessage: 'Error in verifying token.'});
+  }
+}
+
+const resetForgotPassword = async (req, res) => {
+  const body = req.body
+  if (!body|| !body.newPassword || !body.confirmPassword) {
+      return res.status(400).json({success: false, errorMessage: "Body is missing newPassword or confirmPassword"})
+  }
+
+  const { newPassword, confirmPassword } = body;
+  if (newPassword !== confirmPassword) {
+      return res.status(400).json({success: false, errorMessage: "Passwords do not match"})
+  }
+  if (newPassword.length < 8) {
+      return res
+          .status(400)
+          .json({
+              success: false,
+              errorMessage: "Please enter a password of at least 8 characters."
+          });
+  }
+
+  try {
+      if (!body.email) {
+          return res.status(500).json({
+              loggedIn: false,
+              user: null,
+              errorMessage: "An unexpected error occured."
+          })
+      }
+
+      const loggedInUser = await UserModel.findOne({ email: body.email });
+      if (!loggedInUser) {
+          return res.status(500).json({
+              loggedIn: false,
+              user: null,
+              errorMessage: "???"
+          })
+      }
+      
+      const saltRounds = 10;
+      const salt = await bcrypt.genSalt(saltRounds);
+      const passwordHash = await bcrypt.hash(newPassword, salt);
+      loggedInUser.passwordHash = passwordHash
+      await loggedInUser.save()
+
+      const token = auth.signToken(loggedInUser._id);
+      res.cookie("token", token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: true
+      }).json({ 
+          loggedIn: true,
+          user: {
+              userName: loggedInUser.userName,
+              email: loggedInUser.email,
+              isAdmin: loggedInUser.isAdmin,
+              userId: loggedInUser._id
+          }
+      })
+  } catch (err) {
+      // console.log("err: " + err);
+      return res.status(500).json(false);
   }
 }
 
 // export default AuthController
-const AuthController = {getLoggedIn, registerUser, loginUser, logoutUser, resetPassword, forgotPassword}
+const AuthController = {getLoggedIn, registerUser, loginUser, logoutUser, resetPassword, requestPasswordToken, verifyToken, resetForgotPassword}
 // export {AuthController}
 export default AuthController
 
