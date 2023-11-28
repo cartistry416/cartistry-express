@@ -178,8 +178,7 @@ const createPost = async (req, res) => {
     let post;
     try {
         if (body.mapMetadataId && body.mapMetadataId !== "") {
-
-
+            // comment for commit
             const mapMetadataDocument = await MapMetadataModel.findById(body.mapMetadataId)
             if (mapMetadataDocument.owner.toString() !== req.userId) {
                 return res.status(401).json({success: false, errorMessage: "Unauthorized to publish this map"})
