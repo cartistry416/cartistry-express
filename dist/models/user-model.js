@@ -12,7 +12,7 @@ const UserSchema = new Schema({
     duplicateCount: { type: Number, default: 0 },
     isAdmin: { type: Boolean, default: false },
     resetPasswordToken: { type: String, required: false },
-    resetTokenExpiration: { type: Date, required: false },
+    resetTokenExpiration: { type: Number, required: false },
 }, { timestamps: true });
 const UserModel = mongoose.model('User', UserSchema);
 export { UserModel };
