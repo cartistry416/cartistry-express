@@ -113,7 +113,9 @@ const forkMap = async (req, res) => {
         const cloneGeoJSONZipId = mongoose.Types.ObjectId().toString()
         cloneMapData.geoJSONZipId = cloneGeoJSONZipId
         await zipToGridFS(cloneGeoJSONZipId, geoJSONZip)
-
+    
+        cloneMapMetaData.createdAt =  new Date()
+        cloneMapMetaData.updatedAt =  new Date()
 
         cloneMapData.isNew = true
         cloneMapMetaData.isNew = true

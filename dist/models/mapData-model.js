@@ -23,7 +23,7 @@ const mapDataSchema = new Schema({
             sections: { type: Number, default: 4 },
         },
     },
-}, { timestamps: true });
+});
 // Create the MapData model
 const MapDataModel = mongoose.model('MapData', mapDataSchema);
 export { MapDataModel };

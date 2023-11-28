@@ -22,6 +22,8 @@ interface MapMetadataDocument extends Document {
   forks: number;
   mapData: mongoose.Schema.Types.ObjectId; 
   isPrivated: boolean;
+  createdAt: Date;
+  updatedAt: Date
 }
 
 interface Image {

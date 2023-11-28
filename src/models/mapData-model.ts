@@ -23,7 +23,7 @@ const mapDataSchema = new Schema<MapDataDocument>({
       sections: { type: Number, default: 4},
     },
   },
-}, { timestamps: true });
+});
 
 // Define the MapDataDocument interface to represent a map data document
 interface MapDataDocument extends Document {
