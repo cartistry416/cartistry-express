@@ -165,7 +165,11 @@ const getPublicMapMetadataOwnedByUser = (req, res) => __awaiter(void 0, void 0, 
     return res.status(200).json({ success: true, mapMetadatas: publicMapMetadatas });
 });
 const getMapData = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const mapMetadataDocument = yield MapMetadataModel.findById(req.params.id);
+    let mapMetadataDocument = null;
+    if (!mongoose.isValidObjectId(req.params.id)) {
+        return res.status(400).json({ success: false, errorMessage: "Invalid map metadata id: " + req.params.id });
+    }
+    mapMetadataDocument = yield MapMetadataModel.findById(req.params.id);
     if (!mapMetadataDocument) {
         return res.status(404).json({ success: false, errorMessage: "Unable to find mapMetadata" });
     }
@@ -192,6 +196,9 @@ const getMapData = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
 });
 const getMapMetadata = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+        return res.status(400).json({ success: false, errorMessage: "Invalid map metadata id: " + req.params.id });
+    }
     const mapMetadataDocument = yield MapMetadataModel.findById(req.params.id);
     if (!mapMetadataDocument) {
         return res.status(404).json({ success: false, errorMessage: "Unable to find mapMetadata" });

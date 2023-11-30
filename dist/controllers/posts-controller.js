@@ -161,6 +161,7 @@ const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     let post;
     try {
         if (body.mapMetadataId && body.mapMetadataId !== "") {
+            // comment for commit
             const mapMetadataDocument = yield MapMetadataModel.findById(body.mapMetadataId);
             if (mapMetadataDocument.owner.toString() !== req.userId) {
                 return res.status(401).json({ success: false, errorMessage: "Unauthorized to publish this map" });
@@ -179,7 +180,7 @@ const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         if (!result) {
             return res.status(500).json({ success: false, errorMessage: "Unable to update user" });
         }
-        return res.status(200).json({ success: true, postId: post._id });
+        return res.status(200).json({ success: true, postId: post._id, mapMetadataId: post.mapMetadata });
     }
     catch (err) {
         console.error(err);

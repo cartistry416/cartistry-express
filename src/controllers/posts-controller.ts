@@ -191,15 +191,17 @@ const createPost = async (req, res) => {
             post = await PostModel.create({owner: req.userId, thumbnail, ownerUserName: user.userName, title: body.title, textContent: body.textContent, tags, images})
         }
 
+
         if (!post) {
             return res.status(500).json({ success: false, errorMessage: "Unable to create post" })
         }
+
 
         result = await UserModel.findByIdAndUpdate(req.userId, {$push: {posts: post._id}})
         if (!result) {
             return res.status(500).json({success: false, errorMessage: "Unable to update user"})
         }
-        return res.status(200).json({success: true, postId: post._id})
+        return res.status(200).json({success: true, postId: post._id, mapMetadataId: post.mapMetadata})
     }
     catch (err) {
         console.error(err)

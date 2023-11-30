@@ -3,7 +3,7 @@ import { PostModel, PostDocument } from '../models/post-model.js'
 import { MapMetadataModel, MapMetadataDocument } from '../models/mapMetadata-model.js'
 import { MapDataModel, MapDataDocument } from '../models/mapData-model.js'
 
-import mongoose from 'mongoose'
+import mongoose, { isValidObjectId } from 'mongoose'
 import {MapFileParserFactory} from '../utils/MapFileParser.js'
 import { bufferToZip, zipToGridFS, gridFSToZip, zipToBuffer, patchGeoJSON, zipToGridFSOverwrite} from '../utils/utils.js'
 import { findUserById } from '../utils/utils.js'
@@ -202,7 +202,11 @@ const getPublicMapMetadataOwnedByUser = async (req, res) => {
 }
 const getMapData = async (req, res: Response) => {
 
-    const mapMetadataDocument = await MapMetadataModel.findById(req.params.id)
+    let mapMetadataDocument = null
+    if (!mongoose.isValidObjectId(req.params.id)) {
+        return res.status(400).json({success: false, errorMessage: "Invalid map metadata id: " + req.params.id})
+    }
+    mapMetadataDocument = await MapMetadataModel.findById(req.params.id)
     if (!mapMetadataDocument) {
         return res.status(404).json({success:false, errorMessage: "Unable to find mapMetadata"})
     }
@@ -233,6 +237,10 @@ const getMapData = async (req, res: Response) => {
 }
 
 const getMapMetadata = async (req, res) => {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+        return res.status(400).json({success: false, errorMessage: "Invalid map metadata id: " + req.params.id})
+    }
+    
     const mapMetadataDocument = await MapMetadataModel.findById(req.params.id)
     if (!mapMetadataDocument) {
         return res.status(404).json({success:false, errorMessage: "Unable to find mapMetadata"})
