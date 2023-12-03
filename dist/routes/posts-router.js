@@ -27,7 +27,7 @@ postsRouter.put('/posts/:id/likes', auth.verify, PostsController.updatePostLikes
 postsRouter.put('/posts/:id/comment', auth.verify, PostsController.commentOnPost);
 postsRouter.put('/posts/:id/edit-comment', auth.verify, PostsController.editComment);
 postsRouter.delete('/posts/:id', auth.verify, PostsController.deletePost);
-postsRouter.delete('/posts/:id/comment', auth.verify, PostsController.deleteComment);
+postsRouter.delete('/posts/:id/comment/:index', auth.verify, PostsController.deleteComment);
 export { postsRouter };
 // module.exports = postsRouter
 // const postspostsRouter = postsRouter

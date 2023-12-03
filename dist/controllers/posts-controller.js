@@ -16,7 +16,6 @@ import { CommentModel } from '../models/comment-model.js';
 function extractPostCardInfo(posts) {
     const extractedPosts = posts.map(post => {
         const { title, owner, ownerUserName, thumbnail, likes, forks, tags, mapMetadata, _id, createdAt, updatedAt } = post;
-        console.log(post);
         const numComments = post.commentList ? post.commentList.length : 0;
         return { title, owner, ownerUserName, thumbnail, likes, forks, tags, mapMetadata, _id, createdAt, updatedAt, numComments };
     });
@@ -328,7 +327,7 @@ const commentOnPost = (req, res) => __awaiter(void 0, void 0, void 0, function* 
 });
 const editComment = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const body = req.body;
-    if (!body || !body.textContent || !body.index) {
+    if (!body || !body.textContent || body.index === undefined) {
         return res.status(400).json({
             success: false,
             errorMessage: 'You must provide a body with textContent and index',
@@ -367,8 +366,8 @@ const editComment = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     }
 });
 const deleteComment = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { index } = req.body;
-    if (!index) {
+    const index = req.params.index;
+    if (index === undefined) {
         return res.status(400).json({
             success: false,
             errorMessage: 'You must provide an index',
@@ -401,7 +400,6 @@ const deleteComment = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         return res.status(200).json({ success: true, message: "Comment deleted" });
     }
     catch (error) {
-        console.error('Error:', error);
         return res.status(500).json({ success: false, errorMessage: 'Error deleting comment' });
     }
 });
