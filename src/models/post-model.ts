@@ -1,5 +1,4 @@
 import mongoose, { Document, Model} from 'mongoose';
-import { UserDocument } from './user-model'; 
 
 const ObjectId = mongoose.Schema.Types.ObjectId
 
@@ -13,12 +12,7 @@ const postSchema = new mongoose.Schema<PostDocument>({
     imageData: Buffer,
     contentType: String,
   },
-  comments: [
-    {
-      authorUserName: String,
-      comment: String,
-    },
-  ],
+  comments: [{ type: ObjectId, ref: 'Comment', default: [] }],
   images: [
     {
       imageData: Buffer,
@@ -37,7 +31,7 @@ interface PostDocument extends Document {
   textContent: string;
   ownerUserName: string;
   thumbnail: Image;
-  comments: Comment[];
+  comments: mongoose.Schema.Types.ObjectId[];
   images: Image[];
   likes: number;
   forks: number;
@@ -45,11 +39,6 @@ interface PostDocument extends Document {
   tags: string[];
   createdAt: Date;
   updatedAt: Date;
-}
-
-interface Comment {
-  authorUserName: string;
-  comment: string;
 }
 
 interface Image {

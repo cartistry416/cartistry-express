@@ -3,6 +3,7 @@ import { PostModel, PostDocument } from '../models/post-model.js'; // Import the
 import { MapMetadataModel, MapMetadataDocument } from '../models/mapMetadata-model.js'; // Import the MapMetadata model and MapMetadataDocument
 import { findUserById } from '../utils/utils.js';
 import sharp from 'sharp';
+import { CommentModel } from 'models/comment-model.js';
 
 
 
@@ -277,165 +278,215 @@ const deletePost = async (req, res) => {
 
 }
 
+const updatePostLikes = async(req, res) => {
+  let user = await findUserById(req.userId)
+  if (!user) {
+      return res.status(500).json({
+          success: false,
+          errorMessage: "Unable to find user"
+      })
+  }
+
+  const indexOfAlreadyLiked = user.likedPosts.findIndex(postId =>{
+      return postId.toString() === req.params.id
+  })
+  
+  let post: PostDocument | null = null
+  if (indexOfAlreadyLiked !== -1) {
+      try {
+          post = await PostModel.findByIdAndUpdate(req.params.id, {$inc : {likes: -1}}, {new: true})
+          if (!post) {
+              return res.status(404).json({success: false, errorMessage: "Unable to undo like"})
+          }
+          const result = await UserModel.updateOne({_id: user._id}, {$pull: {likedPosts: post._id}}, {new: true})
+          if (result.nModified === 0) {
+              return res.status(500).json({success: false, errorMessage: "Unable to remove from users liked posts"})
+          }
+
+          return res.status(200).json({success: true, alreadyLiked: false, likes: post.likes})
+      }
+      catch (err) {
+          return res.status(500).json({success: false, errorMessage: "Unable to remove from users liked posts"})
+      }
+  }
+
+  post = await PostModel.findByIdAndUpdate(req.params.id, {$inc : {likes: 1}},  {new: true})
+  if (!post) {
+      return res.status(404).json({success: false, errorMessage: "Unable to increment like"})
+  }
+
+  try {
+      const result = await UserModel.updateOne({_id: user.id}, {$push: {likedPosts: post._id}}, {new: true})
+      if (result.nModified === 0) {
+          return res.status(500).json({success: false, errorMessage: "Unable to add to users liked posts"})
+      }
+  }
+  catch (err) {
+      return res.status(500).json({success: false, errorMessage: "Unable to add to users liked posts"})
+  }
+
+  return res.status(200).json({success: true, alreadyLiked: true, likes: post.likes})
+}
+
+const getPostComments = async (req, res) => {
+  const postId = req.params.id;
+
+  if (!postId) {
+      return res.status(400).json({
+          success: false,
+          errorMessage: 'You must provide a post Id',
+      });
+  }
+
+  try {
+      const post = await PostModel.findById(postId).populate({
+          path: 'comments',
+          model: 'Comment'
+      }).exec();
+
+      if (!post) {
+          return res.status(404).json({ success: false, errorMessage: "Post not found" });
+      }
+
+      return res.status(200).json({ success: true, comments: post.comments });
+
+  } catch (error) {
+      return res.status(500).json({ success: false, errorMessage: 'Error fetching comments' });
+  }
+}
+
 const commentOnPost = async (req, res) => {
     const body = req.body;
-    if (!body || !body.comment) {
+    if (!body || !body.textContent) {
         return res.status(400).json({
             success: false,
-            error: 'You must provide a body with a comment',
-        })
+            error: 'You must provide a body with textContent',
+        });
     }
 
-    let user = await findUserById(req.userId)
+    let user = await findUserById(req.userId);
     if (!user) {
         return res.status(500).json({
             success: false,
             errorMessage: "Unable to find user"
-        })
-    }
-
-    const newComment = {
-        authorUserName: user.userName,
-        comment: body.comment
-    }
-
-   const post = await PostModel.findById(req.params.id)
-   if (!post) {
-        return res.status(404).json({success: false, errorMessage: "Unable to find post"})
-   }
-
-   const newComments = [...post.comments, newComment]
-   post.comments.push(newComment)
-   post.markModified('comments')
-   await post.save()
-   return res.status(200).json({success: true, comments: newComments, index: post.comments.length-1, comment: newComment})
-
-}
-
-
-const editComment = async (req, res) => {
-    const body = req.body;
-    if (!body || !body.comment || body.index === undefined || !(body.index >= 0)) {
-        return res.status(400).json({
-            success: false,
-            errorMessage: 'You must provide a body with comment and index',
-        })
-    }
-    let user = await findUserById(req.userId)
-    if (!user) {
-        return res.status(500).json({
-            success: false,
-            errorMessage: "Unable to find user"
-        })
-    }
-
-    const post = await PostModel.findById(req.params.id)
-    if (!post) {
-        return res.status(404).json({success: false, errorMessage: "Unable to find post"})
-    }
-
-    const oldComment = post.comments[body.index]
-    if (oldComment.authorUserName !== user.userName) {
-        return res.status(401).json({success: false, errorMessage: "Unauthorized to edit this comment"})
-    }
-    const newComment = {
-        authorUserName: user.userName,
-        comment: body.comment,
-        publishDate: new Date(Date.now())
-    }
-    post.comments[body.index] = newComment
-    post.markModified('comments')
-    await post.save()
-
-    return res.status(200).json({success:true, comments: post.comments})
-
-
-}
-
-const updatePostLikes = async(req, res) => {
-
-    let user = await findUserById(req.userId)
-    if (!user) {
-        return res.status(500).json({
-            success: false,
-            errorMessage: "Unable to find user"
-        })
-    }
-
-    const indexOfAlreadyLiked = user.likedPosts.findIndex(postId =>{
-        return postId.toString() === req.params.id
-    })
-    
-    let post: PostDocument | null = null
-    if (indexOfAlreadyLiked !== -1) {
-        try {
-            post = await PostModel.findByIdAndUpdate(req.params.id, {$inc : {likes: -1}}, {new: true})
-            if (!post) {
-                return res.status(404).json({success: false, errorMessage: "Unable to undo like"})
-            }
-            const result = await UserModel.updateOne({_id: user._id}, {$pull: {likedPosts: post._id}}, {new: true})
-            if (result.nModified === 0) {
-                return res.status(500).json({success: false, errorMessage: "Unable to remove from users liked posts"})
-            }
-
-            return res.status(200).json({success: true, alreadyLiked: false, likes: post.likes})
-        }
-        catch (err) {
-            return res.status(500).json({success: false, errorMessage: "Unable to remove from users liked posts"})
-        }
-    }
-
-    post = await PostModel.findByIdAndUpdate(req.params.id, {$inc : {likes: 1}},  {new: true})
-    if (!post) {
-        return res.status(404).json({success: false, errorMessage: "Unable to increment like"})
+        });
     }
 
     try {
-        const result = await UserModel.updateOne({_id: user.id}, {$push: {likedPosts: post._id}}, {new: true})
-        if (result.nModified === 0) {
-            return res.status(500).json({success: false, errorMessage: "Unable to add to users liked posts"})
-        }
-    }
-    catch (err) {
-        return res.status(500).json({success: false, errorMessage: "Unable to add to users liked posts"})
-    }
+        const comment = await CommentModel.create({
+            ownerUserName: user.userName,
+            textContent: body.textContent
+        });
 
-    return res.status(200).json({success: true, alreadyLiked: true, likes: post.likes})
+        await comment.save();
+
+        const post = await PostModel.findById(req.params.id);
+        if (!post) {
+            return res.status(404).json({ success: false, errorMessage: "Unable to find post" });
+        }
+
+        post.comments.push(comment._id);
+        await post.save();
+
+        return res.status(200).json({
+            success: true,
+            commentId: comment._id,
+            comment: { ownerUserName: comment.ownerUserName, textContent: comment.textContent }
+        });
+    } catch (error) {
+        console.error('Error:', error);
+        return res.status(500).json({ success: false, errorMessage: 'Error adding comment' });
+    }
 }
 
+const editComment = async (req, res) => {
+  const body = req.body;
+  if (!body || !body.textContent || !body.commentId) {
+      return res.status(400).json({
+          success: false,
+          errorMessage: 'You must provide a body with textContent and commentId',
+      });
+  }
+
+  let user = await findUserById(req.userId);
+  if (!user) {
+      return res.status(500).json({
+          success: false,
+          errorMessage: "Unable to find user"
+      });
+  }
+
+  const post = await PostModel.findById(req.params.id);
+  if (!post) {
+      return res.status(404).json({ success: false, errorMessage: "Unable to find post" });
+  }
+
+  if (!post.comments.includes(body.commentId)) {
+      return res.status(404).json({ success: false, errorMessage: "Comment not found in the post" });
+  }
+
+  try {
+      const comment = await CommentModel.findById(body.commentId);
+      if (!comment) {
+          return res.status(404).json({ success: false, errorMessage: "Unable to find comment" });
+      }
+
+      if (comment.ownerUserName !== user.userName) {
+          return res.status(401).json({ success: false, errorMessage: "Unauthorized to edit this comment" });
+      }
+
+      comment.textContent = body.textContent;
+      await comment.save();
+      return res.status(200).json({ success: true, message: "Comment updated" });
+  } catch (error) {
+      console.error('Error:', error);
+      return res.status(500).json({ success: false, errorMessage: 'Error updating comment' });
+  }
+}
 
 const deleteComment = async (req, res) => {
-    const body = req.body;
-    if (!body || body.index === undefined || !(body.index >= 0)) {
-        return res.status(400).json({
-            success: false,
-            errorMessage: 'You must provide a body with comment and index',
-        })
-    }
-    let user = await findUserById(req.userId)
-    if (!user) {
-        return res.status(500).json({
-            success: false,
-            errorMessage: "Unable to find user"
-        })
-    }
+  const { commentId } = req.body;
+  if (!commentId) {
+      return res.status(400).json({
+          success: false,
+          errorMessage: 'You must provide a commentId',
+      });
+  }
 
-    const post = await PostModel.findById(req.params.id)
-    if (!post) {
-        return res.status(404).json({success: false, errorMessage: "Unable to find post"})
-    }
+  let user = await findUserById(req.userId);
+  if (!user) {
+      return res.status(500).json({
+          success: false,
+          errorMessage: "Unable to find user"
+      });
+  }
 
-    const comment = post.comments[body.index]
-    if (comment.authorUserName !== user.userName) {
-        return res.status(401).json({success: false, errorMessage: "Unauthorized to edit this comment"})
-    }
+  const post = await PostModel.findById(req.params.id);
+  if (!post) {
+      return res.status(404).json({ success: false, errorMessage: "Unable to find post" });
+  }
 
-    post.comments.splice(body.index, 1)
-    post.markModified('comments')
-    await post.save()
+  try {
+      const comment = await CommentModel.findById(commentId);
+      if (!comment) {
+          return res.status(404).json({ success: false, errorMessage: "Unable to find comment" });
+      }
 
-    return res.status(200).json({success:true, comments: post.comments})
+      if (comment.ownerUserName !== user.userName) {
+          return res.status(401).json({ success: false, errorMessage: "Unauthorized to delete this comment" });
+      }
 
+      await CommentModel.findByIdAndDelete(commentId);
+
+      post.comments = post.comments.filter(id => id.toString() !== commentId);
+      await post.save();
+
+      return res.status(200).json({ success: true, message: "Comment deleted" });
+
+  } catch (error) {
+      console.error('Error:', error);
+      return res.status(500).json({ success: false, errorMessage: 'Error deleting comment' });
+  }
 }
 
 
@@ -454,6 +505,7 @@ const PostsController = {
     deleteComment,
     editPost,
     editComment,
+    getPostComments,
 }
 
 export {PostsController}
