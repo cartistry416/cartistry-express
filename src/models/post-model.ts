@@ -12,7 +12,7 @@ const postSchema = new mongoose.Schema<PostDocument>({
     imageData: Buffer,
     contentType: String,
   },
-  comments: [{ type: ObjectId, ref: 'Comment', default: [] }],
+  commentList: [{ type: ObjectId, ref: 'Comment', default: [] }],
   images: [
     {
       imageData: Buffer,
@@ -31,7 +31,7 @@ interface PostDocument extends Document {
   textContent: string;
   ownerUserName: string;
   thumbnail: Image;
-  comments: mongoose.Schema.Types.ObjectId[];
+  commentList: mongoose.Schema.Types.ObjectId[];
   images: Image[];
   likes: number;
   forks: number;

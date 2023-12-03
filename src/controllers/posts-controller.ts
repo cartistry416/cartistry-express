@@ -3,14 +3,14 @@ import { PostModel, PostDocument } from '../models/post-model.js'; // Import the
 import { MapMetadataModel, MapMetadataDocument } from '../models/mapMetadata-model.js'; // Import the MapMetadata model and MapMetadataDocument
 import { findUserById } from '../utils/utils.js';
 import sharp from 'sharp';
-import { CommentModel } from 'models/comment-model.js';
+import { CommentModel } from '../models/comment-model.js';
 
 
 
 function extractPostCardInfo(posts: PostDocument[]) {
     const extractedPosts =  posts.map(post => {
         const {title, owner, ownerUserName, thumbnail, likes, forks, tags, mapMetadata, _id, createdAt, updatedAt} = post
-        const numComments = post.comments.length
+        const numComments = post.commentList ? post.commentList.length : 0
         return {title, owner, ownerUserName, thumbnail, likes, forks, tags, mapMetadata, _id, createdAt, updatedAt, numComments}
     })
     return extractedPosts
@@ -77,18 +77,28 @@ const getPostsOwnedByUser = async (req, res) => {
 
 }
 
-const getPost = async (req , res) => {
-    const postId = req.params.id
-    try {
-        const post = await PostModel.findById(postId)
-        if (!post) {
-            return res.status(404).json({success: false, errorMessage: "post not found"})
-        }
-        return res.status(200).json({success: true, post})
-    }
-    catch (err) {
-        return res.status(400).json({success: false, errorMessage: `Unable to retrieve post`})
-    }
+const getPost = async (req, res) => {
+  const postId = req.params.id;
+  try {
+      const post = await PostModel.findById(postId);
+      if (!post) {
+          return res.status(404).json({ success: false, errorMessage: "Post not found" });
+      }
+
+      const comments = await Promise.all(
+          post.commentList.map(commentId => CommentModel.findById(commentId))
+      );
+
+      const postWithComments = {
+          ...post.toObject(),
+          comments: comments
+      };
+
+      return res.status(200).json({ success: true, post: postWithComments });
+  }
+  catch (err) {
+      return res.status(400).json({ success: false, errorMessage: "Unable to retrieve post" });
+  }
 }
 
 const getMostRecentPosts = async (req, res) => {
@@ -328,33 +338,6 @@ const updatePostLikes = async(req, res) => {
   return res.status(200).json({success: true, alreadyLiked: true, likes: post.likes})
 }
 
-const getPostComments = async (req, res) => {
-  const postId = req.params.id;
-
-  if (!postId) {
-      return res.status(400).json({
-          success: false,
-          errorMessage: 'You must provide a post Id',
-      });
-  }
-
-  try {
-      const post = await PostModel.findById(postId).populate({
-          path: 'comments',
-          model: 'Comment'
-      }).exec();
-
-      if (!post) {
-          return res.status(404).json({ success: false, errorMessage: "Post not found" });
-      }
-
-      return res.status(200).json({ success: true, comments: post.comments });
-
-  } catch (error) {
-      return res.status(500).json({ success: false, errorMessage: 'Error fetching comments' });
-  }
-}
-
 const commentOnPost = async (req, res) => {
     const body = req.body;
     if (!body || !body.textContent) {
@@ -385,14 +368,10 @@ const commentOnPost = async (req, res) => {
             return res.status(404).json({ success: false, errorMessage: "Unable to find post" });
         }
 
-        post.comments.push(comment._id);
+        post.commentList.push(comment._id);
         await post.save();
 
-        return res.status(200).json({
-            success: true,
-            commentId: comment._id,
-            comment: { ownerUserName: comment.ownerUserName, textContent: comment.textContent }
-        });
+        return res.status(200).json({ success: true, comment: comment, index: post.commentList.length - 1 });
     } catch (error) {
         console.error('Error:', error);
         return res.status(500).json({ success: false, errorMessage: 'Error adding comment' });
@@ -401,10 +380,10 @@ const commentOnPost = async (req, res) => {
 
 const editComment = async (req, res) => {
   const body = req.body;
-  if (!body || !body.textContent || !body.commentId) {
+  if (!body || !body.textContent || !body.index) {
       return res.status(400).json({
           success: false,
-          errorMessage: 'You must provide a body with textContent and commentId',
+          errorMessage: 'You must provide a body with textContent and index',
       });
   }
 
@@ -417,16 +396,17 @@ const editComment = async (req, res) => {
   }
 
   const post = await PostModel.findById(req.params.id);
+  const commentId = post.commentList[body.index]
   if (!post) {
       return res.status(404).json({ success: false, errorMessage: "Unable to find post" });
   }
 
-  if (!post.comments.includes(body.commentId)) {
+  if (!post.commentList.includes(commentId)) {
       return res.status(404).json({ success: false, errorMessage: "Comment not found in the post" });
   }
 
   try {
-      const comment = await CommentModel.findById(body.commentId);
+      const comment = await CommentModel.findById(commentId);
       if (!comment) {
           return res.status(404).json({ success: false, errorMessage: "Unable to find comment" });
       }
@@ -445,11 +425,11 @@ const editComment = async (req, res) => {
 }
 
 const deleteComment = async (req, res) => {
-  const { commentId } = req.body;
-  if (!commentId) {
+  const { index } = req.body;
+  if (!index) {
       return res.status(400).json({
           success: false,
-          errorMessage: 'You must provide a commentId',
+          errorMessage: 'You must provide an index',
       });
   }
 
@@ -462,6 +442,7 @@ const deleteComment = async (req, res) => {
   }
 
   const post = await PostModel.findById(req.params.id);
+  const commentId = post.commentList[index]
   if (!post) {
       return res.status(404).json({ success: false, errorMessage: "Unable to find post" });
   }
@@ -478,8 +459,9 @@ const deleteComment = async (req, res) => {
 
       await CommentModel.findByIdAndDelete(commentId);
 
-      post.comments = post.comments.filter(id => id.toString() !== commentId);
-      await post.save();
+      post.commentList.splice(index, 1)
+      post.markModified('comments')
+      await post.save()
 
       return res.status(200).json({ success: true, message: "Comment deleted" });
 
@@ -505,7 +487,6 @@ const PostsController = {
     deleteComment,
     editPost,
     editComment,
-    getPostComments,
 }
 
 export {PostsController}

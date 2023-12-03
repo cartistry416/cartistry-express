@@ -24,7 +24,6 @@ postsRouter.get('/posts/most-recent', PostsController.getMostRecentPosts)
 postsRouter.get('/posts/least-recent', PostsController.getLeastRecentPosts)
 postsRouter.get('/posts/most-liked', PostsController.getMostLikedPosts)
 postsRouter.get('/posts/:id', PostsController.getPost)
-postsRouter.get('/posts/:id/comments', PostsController.getPostComments)
 postsRouter.post('/posts', auth.verify, upload.array('images'), PostsController.createPost)
 
 // Any non-guest user can like, dislike, or comment on another user's post (or their own)
