@@ -380,7 +380,7 @@ const commentOnPost = async (req, res) => {
 
 const editComment = async (req, res) => {
   const body = req.body;
-  if (!body || !body.textContent || !body.index) {
+  if (!body || !body.textContent || body.index === undefined) {
       return res.status(400).json({
           success: false,
           errorMessage: 'You must provide a body with textContent and index',
@@ -425,8 +425,8 @@ const editComment = async (req, res) => {
 }
 
 const deleteComment = async (req, res) => {
-  const { index } = req.body;
-  if (!index) {
+  const index = req.params.index;
+  if (index === undefined) {
       return res.status(400).json({
           success: false,
           errorMessage: 'You must provide an index',
@@ -466,7 +466,6 @@ const deleteComment = async (req, res) => {
       return res.status(200).json({ success: true, message: "Comment deleted" });
 
   } catch (error) {
-      console.error('Error:', error);
       return res.status(500).json({ success: false, errorMessage: 'Error deleting comment' });
   }
 }
