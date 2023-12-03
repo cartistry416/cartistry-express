@@ -9,12 +9,7 @@ const postSchema = new mongoose.Schema({
         imageData: Buffer,
         contentType: String,
     },
-    comments: [
-        {
-            authorUserName: String,
-            comment: String,
-        },
-    ],
+    commentList: [{ type: ObjectId, ref: 'Comment', default: [] }],
     images: [
         {
             imageData: Buffer,

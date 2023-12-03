@@ -12,10 +12,12 @@ import { PostModel } from '../models/post-model.js'; // Import the Post model an
 import { MapMetadataModel } from '../models/mapMetadata-model.js'; // Import the MapMetadata model and MapMetadataDocument
 import { findUserById } from '../utils/utils.js';
 import sharp from 'sharp';
+import { CommentModel } from '../models/comment-model.js';
 function extractPostCardInfo(posts) {
     const extractedPosts = posts.map(post => {
         const { title, owner, ownerUserName, thumbnail, likes, forks, tags, mapMetadata, _id, createdAt, updatedAt } = post;
-        const numComments = post.comments.length;
+        console.log(post);
+        const numComments = post.commentList ? post.commentList.length : 0;
         return { title, owner, ownerUserName, thumbnail, likes, forks, tags, mapMetadata, _id, createdAt, updatedAt, numComments };
     });
     return extractedPosts;
@@ -76,12 +78,14 @@ const getPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const post = yield PostModel.findById(postId);
         if (!post) {
-            return res.status(404).json({ success: false, errorMessage: "post not found" });
+            return res.status(404).json({ success: false, errorMessage: "Post not found" });
         }
-        return res.status(200).json({ success: true, post });
+        const comments = yield Promise.all(post.commentList.map(commentId => CommentModel.findById(commentId)));
+        const postWithComments = Object.assign(Object.assign({}, post.toObject()), { comments: comments });
+        return res.status(200).json({ success: true, post: postWithComments });
     }
     catch (err) {
-        return res.status(400).json({ success: false, errorMessage: `Unable to retrieve post` });
+        return res.status(400).json({ success: false, errorMessage: "Unable to retrieve post" });
     }
 });
 const getMostRecentPosts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -245,68 +249,6 @@ const deletePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
     return res.status(200).json({ success: true });
 });
-const commentOnPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const body = req.body;
-    if (!body || !body.comment) {
-        return res.status(400).json({
-            success: false,
-            error: 'You must provide a body with a comment',
-        });
-    }
-    let user = yield findUserById(req.userId);
-    if (!user) {
-        return res.status(500).json({
-            success: false,
-            errorMessage: "Unable to find user"
-        });
-    }
-    const newComment = {
-        authorUserName: user.userName,
-        comment: body.comment
-    };
-    const post = yield PostModel.findById(req.params.id);
-    if (!post) {
-        return res.status(404).json({ success: false, errorMessage: "Unable to find post" });
-    }
-    const newComments = [...post.comments, newComment];
-    post.comments.push(newComment);
-    post.markModified('comments');
-    yield post.save();
-    return res.status(200).json({ success: true, comments: newComments, index: post.comments.length - 1, comment: newComment });
-});
-const editComment = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const body = req.body;
-    if (!body || !body.comment || body.index === undefined || !(body.index >= 0)) {
-        return res.status(400).json({
-            success: false,
-            errorMessage: 'You must provide a body with comment and index',
-        });
-    }
-    let user = yield findUserById(req.userId);
-    if (!user) {
-        return res.status(500).json({
-            success: false,
-            errorMessage: "Unable to find user"
-        });
-    }
-    const post = yield PostModel.findById(req.params.id);
-    if (!post) {
-        return res.status(404).json({ success: false, errorMessage: "Unable to find post" });
-    }
-    const oldComment = post.comments[body.index];
-    if (oldComment.authorUserName !== user.userName) {
-        return res.status(401).json({ success: false, errorMessage: "Unauthorized to edit this comment" });
-    }
-    const newComment = {
-        authorUserName: user.userName,
-        comment: body.comment,
-        publishDate: new Date(Date.now())
-    };
-    post.comments[body.index] = newComment;
-    post.markModified('comments');
-    yield post.save();
-    return res.status(200).json({ success: true, comments: post.comments });
-});
 const updatePostLikes = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     let user = yield findUserById(req.userId);
     if (!user) {
@@ -350,12 +292,46 @@ const updatePostLikes = (req, res) => __awaiter(void 0, void 0, void 0, function
     }
     return res.status(200).json({ success: true, alreadyLiked: true, likes: post.likes });
 });
-const deleteComment = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const commentOnPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const body = req.body;
-    if (!body || body.index === undefined || !(body.index >= 0)) {
+    if (!body || !body.textContent) {
         return res.status(400).json({
             success: false,
-            errorMessage: 'You must provide a body with comment and index',
+            error: 'You must provide a body with textContent',
+        });
+    }
+    let user = yield findUserById(req.userId);
+    if (!user) {
+        return res.status(500).json({
+            success: false,
+            errorMessage: "Unable to find user"
+        });
+    }
+    try {
+        const comment = yield CommentModel.create({
+            ownerUserName: user.userName,
+            textContent: body.textContent
+        });
+        yield comment.save();
+        const post = yield PostModel.findById(req.params.id);
+        if (!post) {
+            return res.status(404).json({ success: false, errorMessage: "Unable to find post" });
+        }
+        post.commentList.push(comment._id);
+        yield post.save();
+        return res.status(200).json({ success: true, comment: comment, index: post.commentList.length - 1 });
+    }
+    catch (error) {
+        console.error('Error:', error);
+        return res.status(500).json({ success: false, errorMessage: 'Error adding comment' });
+    }
+});
+const editComment = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const body = req.body;
+    if (!body || !body.textContent || !body.index) {
+        return res.status(400).json({
+            success: false,
+            errorMessage: 'You must provide a body with textContent and index',
         });
     }
     let user = yield findUserById(req.userId);
@@ -366,17 +342,68 @@ const deleteComment = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         });
     }
     const post = yield PostModel.findById(req.params.id);
+    const commentId = post.commentList[body.index];
     if (!post) {
         return res.status(404).json({ success: false, errorMessage: "Unable to find post" });
     }
-    const comment = post.comments[body.index];
-    if (comment.authorUserName !== user.userName) {
-        return res.status(401).json({ success: false, errorMessage: "Unauthorized to edit this comment" });
+    if (!post.commentList.includes(commentId)) {
+        return res.status(404).json({ success: false, errorMessage: "Comment not found in the post" });
     }
-    post.comments.splice(body.index, 1);
-    post.markModified('comments');
-    yield post.save();
-    return res.status(200).json({ success: true, comments: post.comments });
+    try {
+        const comment = yield CommentModel.findById(commentId);
+        if (!comment) {
+            return res.status(404).json({ success: false, errorMessage: "Unable to find comment" });
+        }
+        if (comment.ownerUserName !== user.userName) {
+            return res.status(401).json({ success: false, errorMessage: "Unauthorized to edit this comment" });
+        }
+        comment.textContent = body.textContent;
+        yield comment.save();
+        return res.status(200).json({ success: true, message: "Comment updated" });
+    }
+    catch (error) {
+        console.error('Error:', error);
+        return res.status(500).json({ success: false, errorMessage: 'Error updating comment' });
+    }
+});
+const deleteComment = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { index } = req.body;
+    if (!index) {
+        return res.status(400).json({
+            success: false,
+            errorMessage: 'You must provide an index',
+        });
+    }
+    let user = yield findUserById(req.userId);
+    if (!user) {
+        return res.status(500).json({
+            success: false,
+            errorMessage: "Unable to find user"
+        });
+    }
+    const post = yield PostModel.findById(req.params.id);
+    const commentId = post.commentList[index];
+    if (!post) {
+        return res.status(404).json({ success: false, errorMessage: "Unable to find post" });
+    }
+    try {
+        const comment = yield CommentModel.findById(commentId);
+        if (!comment) {
+            return res.status(404).json({ success: false, errorMessage: "Unable to find comment" });
+        }
+        if (comment.ownerUserName !== user.userName) {
+            return res.status(401).json({ success: false, errorMessage: "Unauthorized to delete this comment" });
+        }
+        yield CommentModel.findByIdAndDelete(commentId);
+        post.commentList.splice(index, 1);
+        post.markModified('comments');
+        yield post.save();
+        return res.status(200).json({ success: true, message: "Comment deleted" });
+    }
+    catch (error) {
+        console.error('Error:', error);
+        return res.status(500).json({ success: false, errorMessage: 'Error deleting comment' });
+    }
 });
 const PostsController = {
     createPost,
