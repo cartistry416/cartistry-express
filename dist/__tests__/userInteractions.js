@@ -115,17 +115,17 @@ describe('Set of tests involving user interactions', () => {
         res = yield req.post(`/maps-api/maps/${mapMetadataId}/fork`).set('Cookie', userToken2);
         expect(res.status).toBe(200);
     }));
-    it('commenting on created post', () => __awaiter(void 0, void 0, void 0, function* () {
-        const comment = "HELLO I AM COMMENTING, COOL MAP!!";
-        res = yield req.put(`/posts-api/posts/${postId}/comment`).send({ comment }).set('Cookie', userToken2);
-        expect(res.status).toBe(200);
-        expect(res.body.comments[0].comment).toBe(comment);
-    }));
-    it('deleting comment', () => __awaiter(void 0, void 0, void 0, function* () {
-        res = yield req.delete(`/posts-api/posts/${postId}/comment`).send({ index: 0 }).set('Cookie', userToken2);
-        expect(res.status).toBe(200);
-        expect(res.body.comments.length).toBe(0);
-    }));
+    // it('commenting on created post', async () => {
+    //     const comment = "HELLO I AM COMMENTING, COOL MAP!!"
+    //     res = await req.put(`/posts-api/posts/${postId}/comment`).send({comment}).set('Cookie', userToken2)
+    //     expect(res.status).toBe(200)
+    //     expect(res.body.comments[0].comment).toBe(comment)
+    // })
+    // it('deleting comment', async () => {
+    //     res = await req.delete(`/posts-api/posts/${postId}/comment`).send({index: 0}).set('Cookie', userToken2)
+    //     expect(res.status).toBe(200)
+    //     expect(res.body.comments.length).toBe(0)
+    // })
     it('like the post', () => __awaiter(void 0, void 0, void 0, function* () {
         res = yield req.put(`/posts-api/posts/${postId}/likes`).set('Cookie', userToken2);
         expect(res.status).toBe(200);

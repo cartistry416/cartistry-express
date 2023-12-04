@@ -122,6 +122,8 @@ async function zipToGridFSOverwrite(id: string, zipData: Buffer): Promise<void> 
 
 async function patchGeoJSON(geoJSON: Object, delta: Delta): Promise<Buffer> {
    const editedGeoJSON = patch(geoJSON, delta)
+
+   console.log(editedGeoJSON)
    // after performing patch, compress JSON to zip in order to store in GridFS
    return await bufferToZip(Buffer.from(JSON.stringify(editedGeoJSON)))
 }

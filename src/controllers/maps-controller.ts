@@ -307,8 +307,8 @@ const saveMapEdits = async (req, res: Response) => {
         const mapDataDocument = await MapDataModel.findById(mapMetaDataDocument.mapData)
         const geoJSONZip: Buffer = await gridFSToZip(mapDataDocument.geoJSONZipId)
         const geoJSON: Object = JSON.parse((await zipToBuffer(geoJSONZip)).toString())
-        const editedGeoJSON: Buffer = Buffer.from(JSON.stringify(patchGeoJSON(geoJSON, body.delta)))
-        const editedGeoJSONZip: Buffer = await bufferToZip(editedGeoJSON)
+        const editedGeoJSONZip: Buffer = await patchGeoJSON(geoJSON, body.delta)
+
         await zipToGridFSOverwrite(mapDataDocument.geoJSONZipId, editedGeoJSONZip)
 
 

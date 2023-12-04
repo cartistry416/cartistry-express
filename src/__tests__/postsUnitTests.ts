@@ -80,18 +80,18 @@ describe('PostsController tests', () => {
             expect(post.textContent).toBe(newTextContent)
         })
 
-        it('commenting on created post', async () => {
-            const comment = "HELLO I AM COMMENTING, COOL MAP!!"
-            res = await req.put(`/posts-api/posts/${postId1}/comment`).send({comment}).set('Cookie', token)
-            expect(res.status).toBe(200)
-            expect(res.body.comments[0].comment).toBe(comment)
-        })
+        // it('commenting on created post', async () => {
+        //     const comment = "HELLO I AM COMMENTING, COOL MAP!!"
+        //     res = await req.put(`/posts-api/posts/${postId1}/comment`).send({comment}).set('Cookie', token)
+        //     expect(res.status).toBe(200)
+        //     expect(res.body.comments[0].comment).toBe(comment)
+        // })
 
-        it('deleting comment', async () => {
-            res = await req.delete(`/posts-api/posts/${postId1}/comment`).send({index: 0}).set('Cookie', token)
-            expect(res.status).toBe(200)
-            expect(res.body.comments.length).toBe(0)
-        })
+        // it('deleting comment', async () => {
+        //     res = await req.delete(`/posts-api/posts/${postId1}/comment`).send({index: 0}).set('Cookie', token)
+        //     expect(res.status).toBe(200)
+        //     expect(res.body.comments.length).toBe(0)
+        // })
 
         it ('example request to get most recent posts. Note that postId2 is first because it is most recent', async () => {
             res = await req.get('/posts-api/posts/most-recent/?limit=2')

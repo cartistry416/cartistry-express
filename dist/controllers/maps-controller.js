@@ -256,8 +256,7 @@ const saveMapEdits = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         const mapDataDocument = yield MapDataModel.findById(mapMetaDataDocument.mapData);
         const geoJSONZip = yield gridFSToZip(mapDataDocument.geoJSONZipId);
         const geoJSON = JSON.parse((yield zipToBuffer(geoJSONZip)).toString());
-        const editedGeoJSON = Buffer.from(JSON.stringify(patchGeoJSON(geoJSON, body.delta)));
-        const editedGeoJSONZip = yield bufferToZip(editedGeoJSON);
+        const editedGeoJSONZip = yield patchGeoJSON(geoJSON, body.delta);
         yield zipToGridFSOverwrite(mapDataDocument.geoJSONZipId, editedGeoJSONZip);
         if (body.proprietaryJSON) {
             mapDataDocument.proprietaryJSON = body.proprietaryJSON;

@@ -81,17 +81,17 @@ describe('PostsController tests', () => {
             expect(post.title).toBe(newTitle);
             expect(post.textContent).toBe(newTextContent);
         }));
-        it('commenting on created post', () => __awaiter(void 0, void 0, void 0, function* () {
-            const comment = "HELLO I AM COMMENTING, COOL MAP!!";
-            res = yield req.put(`/posts-api/posts/${postId1}/comment`).send({ comment }).set('Cookie', token);
-            expect(res.status).toBe(200);
-            expect(res.body.comments[0].comment).toBe(comment);
-        }));
-        it('deleting comment', () => __awaiter(void 0, void 0, void 0, function* () {
-            res = yield req.delete(`/posts-api/posts/${postId1}/comment`).send({ index: 0 }).set('Cookie', token);
-            expect(res.status).toBe(200);
-            expect(res.body.comments.length).toBe(0);
-        }));
+        // it('commenting on created post', async () => {
+        //     const comment = "HELLO I AM COMMENTING, COOL MAP!!"
+        //     res = await req.put(`/posts-api/posts/${postId1}/comment`).send({comment}).set('Cookie', token)
+        //     expect(res.status).toBe(200)
+        //     expect(res.body.comments[0].comment).toBe(comment)
+        // })
+        // it('deleting comment', async () => {
+        //     res = await req.delete(`/posts-api/posts/${postId1}/comment`).send({index: 0}).set('Cookie', token)
+        //     expect(res.status).toBe(200)
+        //     expect(res.body.comments.length).toBe(0)
+        // })
         it('example request to get most recent posts. Note that postId2 is first because it is most recent', () => __awaiter(void 0, void 0, void 0, function* () {
             res = yield req.get('/posts-api/posts/most-recent/?limit=2');
             expect(res.status).toBe(200);

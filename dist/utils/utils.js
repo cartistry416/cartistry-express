@@ -126,6 +126,7 @@ function zipToGridFSOverwrite(id, zipData) {
 function patchGeoJSON(geoJSON, delta) {
     return __awaiter(this, void 0, void 0, function* () {
         const editedGeoJSON = patch(geoJSON, delta);
+        console.log(editedGeoJSON);
         // after performing patch, compress JSON to zip in order to store in GridFS
         return yield bufferToZip(Buffer.from(JSON.stringify(editedGeoJSON)));
     });
