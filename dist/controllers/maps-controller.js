@@ -237,10 +237,10 @@ const updateMapPrivacy = (req, res) => __awaiter(void 0, void 0, void 0, functio
 });
 const saveMapEdits = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const body = req.body;
-    if (!body || !body.delta) {
+    if (!body || !body.delta || !body.thumbnail) {
         return res.status(400).json({
             success: false,
-            errorMessage: 'You must provide delta in body',
+            errorMessage: 'You must provide delta and thumbnail in body',
         });
     }
     const user = yield findUserById(req.userId);
@@ -253,6 +253,8 @@ const saveMapEdits = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         if (mapMetaDataDocument.owner.toString() !== user._id.toString()) {
             return res.status(401).json({ success: false, errorMessage: "Unauthorized to save this map" });
         }
+        mapMetaDataDocument.thumbnail = body.thumbnail;
+        yield mapMetaDataDocument.save();
         const mapDataDocument = yield MapDataModel.findById(mapMetaDataDocument.mapData);
         const geoJSONZip = yield gridFSToZip(mapDataDocument.geoJSONZipId);
         const geoJSON = JSON.parse((yield zipToBuffer(geoJSONZip)).toString());

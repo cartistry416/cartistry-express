@@ -5,8 +5,7 @@ const mapMetadata = new mongoose.Schema<MapMetadataDocument>({
   title: { type: String, required: true },
   owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   thumbnail: {
-    imageData: Buffer,
-    contentType: String,
+    type: String
   },
   ownerFavorited: { type: Boolean, default: false },
   forks: { type: Number, default: 0 },
@@ -17,7 +16,7 @@ const mapMetadata = new mongoose.Schema<MapMetadataDocument>({
 interface MapMetadataDocument extends Document {
   title: string;
   owner: mongoose.Schema.Types.ObjectId; 
-  thumbnail: Image;
+  thumbnail: string;
   ownerFavorited: boolean;
   forks: number;
   mapData: mongoose.Schema.Types.ObjectId; 
@@ -26,10 +25,6 @@ interface MapMetadataDocument extends Document {
   updatedAt: Date
 }
 
-interface Image {
-  imageData: Buffer,
-  contentType: string,
-}
 
 const MapMetadataModel: Model<MapMetadataDocument> = mongoose.model('MapMetadata', mapMetadata);
 

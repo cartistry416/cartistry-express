@@ -285,10 +285,10 @@ const updateMapPrivacy = async (req, res) => {
 }
 const saveMapEdits = async (req, res: Response) => {
     const body = req.body
-    if (!body || !body.delta) {
+    if (!body || !body.delta || !body.thumbnail) {
         return res.status(400).json({
             success: false,
-            errorMessage: 'You must provide delta in body',
+            errorMessage: 'You must provide delta and thumbnail in body',
         })
     }
     const user = await findUserById(req.userId) 
@@ -303,6 +303,9 @@ const saveMapEdits = async (req, res: Response) => {
         if(mapMetaDataDocument.owner.toString() !== user._id.toString()) {
             return res.status(401).json({success:false, errorMessage:"Unauthorized to save this map"})
         }
+
+        mapMetaDataDocument.thumbnail = body.thumbnail
+        await mapMetaDataDocument.save()
 
         const mapDataDocument = await MapDataModel.findById(mapMetaDataDocument.mapData)
         const geoJSONZip: Buffer = await gridFSToZip(mapDataDocument.geoJSONZipId)

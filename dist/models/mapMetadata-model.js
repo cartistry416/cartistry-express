@@ -3,8 +3,7 @@ const mapMetadata = new mongoose.Schema({
     title: { type: String, required: true },
     owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     thumbnail: {
-        imageData: Buffer,
-        contentType: String,
+        type: String
     },
     ownerFavorited: { type: Boolean, default: false },
     forks: { type: Number, default: 0 },
