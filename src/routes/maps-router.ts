@@ -21,7 +21,7 @@ mapsRouter.get('/maps/map-metadata', auth.optionalVerify, MapsController.getMapM
 mapsRouter.get('/maps/single-map-metadata/:id', auth.optionalVerify, MapsController.getMapMetadata)
 mapsRouter.get('/maps/public-map-metadata/:userId', MapsController.getPublicMapMetadataOwnedByUser)
 mapsRouter.get('/maps/:id', auth.verify, MapsController.getMapData)
-
+mapsRouter.get('/maps/:id/props', auth.verify, MapsController.getMapProprietaryData)
 
 mapsRouter.post('/maps/upload', auth.verify, upload.single('zipFile'), MapsController.uploadMap)
 mapsRouter.post('/maps/:id/fork', auth.verify, MapsController.forkMap)

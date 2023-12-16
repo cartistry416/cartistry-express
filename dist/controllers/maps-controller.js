@@ -195,6 +195,35 @@ const getMapData = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         return res.status(500).json({ success: false, errorMessage: "Unable to read zip file from gridfs" });
     }
 });
+const getMapProprietaryData = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    let mapMetadataDocument = null;
+    if (!mongoose.isValidObjectId(req.params.id)) {
+        return res.status(400).json({ success: false, errorMessage: "Invalid map metadata id: " + req.params.id });
+    }
+    mapMetadataDocument = yield MapMetadataModel.findById(req.params.id);
+    if (!mapMetadataDocument) {
+        return res.status(404).json({ success: false, errorMessage: "Unable to find mapMetadata" });
+    }
+    console.log(req.userId);
+    if (mapMetadataDocument.isPrivated) {
+        if (!req.userId) { // guest cannot access private map
+            return res.status(401).json({ success: false, errorMessage: "Not authorized to get this map data" });
+        }
+        else if (req.userId !== mapMetadataDocument.owner.toString()) { // logged in cannot access
+            return res.status(401).json({ success: false, errorMessage: "Not authorized to get this map data" });
+        }
+    }
+    const mapDataDocument = yield MapDataModel.findById(mapMetadataDocument.mapData);
+    if (!mapDataDocument) {
+        return res.status(404).json({ success: false, errorMessage: "Unable to find map data" });
+    }
+    try {
+        res.status(200).json({ success: true, proprietaryJSON: mapDataDocument.proprietaryJSON });
+    }
+    catch (err) {
+        return res.status(500).json({ success: false, errorMessage: "Unable to get proprietary JSON" });
+    }
+});
 const getMapMetadata = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     if (!mongoose.isValidObjectId(req.params.id)) {
         return res.status(400).json({ success: false, errorMessage: "Invalid map metadata id: " + req.params.id });
@@ -390,6 +419,7 @@ const MapsController = {
     getPublicMapMetadataOwnedByUser,
     getMapData,
     getMapMetadata,
+    getMapProprietaryData
     //publishMap,
 };
 export { MapsController };
