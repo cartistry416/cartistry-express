@@ -69,7 +69,7 @@ describe('Set of tests involving user interactions', () => {
         res = await req.post('/maps-api/maps/upload')
         .field('fileExtension', 'json')
         .field('title', 'australia json')
-        .field('templateType', 'heat')
+        .field('templateType', 'choropleth')
         .attach('zipFile', zipData, 'data.zip').set('Cookie', userToken1)
         expect(res.status).toBe(200)
         expect(res.body.mapMetadata).toBeDefined()
