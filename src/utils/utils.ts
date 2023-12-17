@@ -74,8 +74,8 @@ async function diskToZipBuffer(path: string): Promise<Buffer> {
 }
 
 
-async function zipToGridFS(id:string, data: Buffer): Promise<void> {
-  const writeStream = gfs.openUploadStreamWithId(id, `geoJSON_${id}.zip`, {contentType:"zip"});
+async function zipToGridFS(id:string , name:string, data: Buffer): Promise<void> {
+  const writeStream = gfs.openUploadStreamWithId(id, name, {contentType:"zip"});
   writeStream.end(data);
   return new Promise<void>((resolve, reject) => {
     writeStream.on('close', () => {
@@ -88,8 +88,8 @@ async function zipToGridFS(id:string, data: Buffer): Promise<void> {
   });
 }
 
-async function gridFSToZip(id:string): Promise<Buffer> {
-  const readStream = gfs.openDownloadStreamByName(`geoJSON_${id}.zip`);
+async function gridFSToZip(name :string): Promise<Buffer> {
+  const readStream = gfs.openDownloadStreamByName(name);
   const bufferArray = [];
   readStream.on('data', chunk => {  
       bufferArray.push(chunk)
@@ -105,7 +105,7 @@ async function gridFSToZip(id:string): Promise<Buffer> {
   });
 }
 
-async function zipToGridFSOverwrite(id: string, zipData: Buffer): Promise<void> {
+async function zipToGridFSOverwrite(id: string, name: string, zipData: Buffer): Promise<void> {
 
   await new Promise<void>((resolve, reject) => {
     gfs.delete(id, (err) => {
@@ -117,7 +117,7 @@ async function zipToGridFSOverwrite(id: string, zipData: Buffer): Promise<void> 
     })
   })
 
-  await zipToGridFS(id, zipData)
+  await zipToGridFS(id, name, zipData)
 }
 
 async function patchGeoJSON(geoJSON: Object, delta: Delta): Promise<Buffer> {

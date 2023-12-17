@@ -77,9 +77,9 @@ function diskToZipBuffer(path) {
         return yield fs.readFile(path);
     });
 }
-function zipToGridFS(id, data) {
+function zipToGridFS(id, name, data) {
     return __awaiter(this, void 0, void 0, function* () {
-        const writeStream = gfs.openUploadStreamWithId(id, `geoJSON_${id}.zip`, { contentType: "zip" });
+        const writeStream = gfs.openUploadStreamWithId(id, name, { contentType: "zip" });
         writeStream.end(data);
         return new Promise((resolve, reject) => {
             writeStream.on('close', () => {
@@ -91,9 +91,9 @@ function zipToGridFS(id, data) {
         });
     });
 }
-function gridFSToZip(id) {
+function gridFSToZip(name) {
     return __awaiter(this, void 0, void 0, function* () {
-        const readStream = gfs.openDownloadStreamByName(`geoJSON_${id}.zip`);
+        const readStream = gfs.openDownloadStreamByName(name);
         const bufferArray = [];
         readStream.on('data', chunk => {
             bufferArray.push(chunk);
@@ -108,7 +108,7 @@ function gridFSToZip(id) {
         });
     });
 }
-function zipToGridFSOverwrite(id, zipData) {
+function zipToGridFSOverwrite(id, name, zipData) {
     return __awaiter(this, void 0, void 0, function* () {
         yield new Promise((resolve, reject) => {
             gfs.delete(id, (err) => {
@@ -120,7 +120,7 @@ function zipToGridFSOverwrite(id, zipData) {
                 }
             });
         });
-        yield zipToGridFS(id, zipData);
+        yield zipToGridFS(id, name, zipData);
     });
 }
 function patchGeoJSON(geoJSON, delta) {

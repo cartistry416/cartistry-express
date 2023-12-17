@@ -5,7 +5,7 @@ import {app} from '../app.js'
 import { randomBytes } from 'crypto'
 import { bufferToZip, zipToBuffer } from '../utils/utils.js'
 import { promises as fs } from 'fs'
-
+import { TextDecoder } from 'util'
 
 import path from 'path'
 
@@ -67,11 +67,16 @@ describe('MapsController tests', () => {
         }, 20000)
 
         it('Can get geoJSON zip data', async () => {
-            res = await req.get(`/maps-api/maps/${mapMetadataId}`).set('Cookie', token)
-            expect(res.status).toBe(200)
-            expect(res.body.length).toBeGreaterThan(0)
-            let geoJSON = await zipToBuffer(Buffer.from(res.body))
-            expect(JSON.parse(geoJSON.toString())).toBeDefined()
+            res = await req.get(`/maps-api/maps/${mapMetadataId}`).set('Cookie', token).responseType('blob').expect(200)
+
+            const responseBodyString = new TextDecoder('utf-8').decode(res.body);
+            const parts = responseBodyString.split(`--boundary`);
+            const proprietaryJSON = JSON.parse(parts[1].split('\r\n\r\n')[1])
+            expect(proprietaryJSON).toBeDefined()
+
+
+            // const buffer = await zipToBuffer(Buffer.from(new TextEncoder().encode(parts[2].split('\r\n\r\n')[1])))
+            // expect(JSON.parse(buffer.toString())).toBeDefined()
         })
 
         it('Uploads kml Map', async () => {

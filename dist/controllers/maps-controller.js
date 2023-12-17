@@ -54,8 +54,12 @@ const uploadMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const mapMetadataDocumentId = mongoose.Types.ObjectId();
         const geoJSONZipId = mongoose.Types.ObjectId().toString();
-        yield zipToGridFS(geoJSONZipId, geoJSONZip); // This line is basically all we have to change!!!
-        const mapDataDocument = yield MapDataModel.create({ geoJSONZipId, proprietaryJSON: { templateType: body.templateType } });
+        const geoManLayersId = mongoose.Types.ObjectId().toString();
+        yield zipToGridFS(geoJSONZipId, `geoJSON_${geoJSONZipId}.zip`, geoJSONZip);
+        const mapDataDocument = yield MapDataModel.create({ geoJSONZipId, geoManLayersId, proprietaryJSON: { templateType: body.templateType } });
+        geoJSONZip = yield bufferToZip(Buffer.from(JSON.stringify([])));
+        // console.log(mapDataDocument.geoManLayersId)
+        yield zipToGridFS(geoManLayersId, `geoMan_${geoManLayersId}.zip`, geoJSONZip);
         const mapMetadataDocument = yield MapMetadataModel.create({ _id: mapMetadataDocumentId, title: body.title, owner: user._id, mapData: mapDataDocument._id });
         user.mapsMetadata.push(mapMetadataDocument._id);
         user.markModified('mapsMetadata');
@@ -81,7 +85,7 @@ const forkMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         }
         let originalMapDataId = originalMapMetaDataDocument.mapData.toString();
         const originalMapDataDocument = yield MapDataModel.findById(originalMapDataId);
-        const geoJSONZip = yield gridFSToZip(originalMapDataDocument.geoJSONZipId.toString());
+        const geoJSONZip = yield gridFSToZip(`geoJSON_${originalMapDataDocument.geoJSONZipId.toString()}.zip`);
         if (!originalMapDataDocument) {
             return res.status(404).json({ success: false, errorMessage: "Unable to find map data via id on mapMetadata" });
         }
@@ -93,7 +97,7 @@ const forkMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         cloneMapMetaData.mapData = cloneMapData._id;
         const cloneGeoJSONZipId = mongoose.Types.ObjectId().toString();
         cloneMapData.geoJSONZipId = cloneGeoJSONZipId;
-        yield zipToGridFS(cloneGeoJSONZipId, geoJSONZip);
+        yield zipToGridFS(cloneGeoJSONZipId, `geoJSON_${cloneGeoJSONZipId}.zip`, geoJSONZip);
         cloneMapMetaData.createdAt = new Date();
         cloneMapMetaData.updatedAt = new Date();
         cloneMapData.isNew = true;
@@ -118,7 +122,7 @@ const exportMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             return res.status(401).json({ success: false, errorMessage: "Unauthorized to export this map" });
         }
         const mapDataDocument = yield MapDataModel.findById(mapMetadataDocument.mapData);
-        const geoJSONZip = yield gridFSToZip(mapDataDocument.geoJSONZipId);
+        const geoJSONZip = yield gridFSToZip(`geoJSON_${mapDataDocument.geoJSONZipId}.zip`);
         res.setHeader('Content-Type', 'application/octet-stream');
         res.status(200).send(geoJSONZip);
     }
@@ -186,9 +190,25 @@ const getMapData = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         return res.status(404).json({ success: false, errorMessage: "Unable to find map data" });
     }
     try {
-        const geoJSONZip = yield gridFSToZip(mapDataDocument.geoJSONZipId);
-        res.setHeader('Content-Type', 'application/octet-stream');
-        res.status(200).send(geoJSONZip);
+        const geoJSONZip = yield gridFSToZip(`geoJSON_${mapDataDocument.geoJSONZipId}.zip`);
+        res.setHeader('Content-Type', 'multipart/mixed; boundary=boundary');
+        res.write('--boundary\r\n');
+        res.write('Content-Type: application/json\r\n\r\n');
+        res.write(JSON.stringify(mapDataDocument.toObject()));
+        res.write('\r\n--boundary\r\n');
+        res.write('Content-Type: application/json\r\n\r\n');
+        // res.write(geoJSONZip);
+        res.write((yield zipToBuffer(geoJSONZip)).toString());
+        if (mapDataDocument.geoManLayersId !== "") {
+            // console.log(mapDataDocument.geoManLayersId )
+            const geoManLayers = yield gridFSToZip(`geoMan_${mapDataDocument.geoManLayersId}.zip`);
+            res.write('\r\n--boundary\r\n');
+            res.write('Content-Type: application/json\r\n\r\n');
+            res.write((yield zipToBuffer(geoManLayers)).toString());
+        }
+        res.end('\r\n--boundary--');
+        // res.setHeader('Content-Type', 'application/octet-stream')
+        // res.status(200).send(geoJSONZip)
     }
     catch (err) {
         console.error("Unable to read zip file from gridfs: " + err);
@@ -265,7 +285,7 @@ const updateMapPrivacy = (req, res) => __awaiter(void 0, void 0, void 0, functio
 });
 const saveMapEdits = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const body = req.body;
-    if (!body || !body.delta || !body.thumbnail) {
+    if (!body || !body.thumbnail) {
         return res.status(400).json({
             success: false,
             errorMessage: 'You must provide delta and thumbnail in body',
@@ -284,14 +304,22 @@ const saveMapEdits = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         mapMetaDataDocument.thumbnail = body.thumbnail;
         yield mapMetaDataDocument.save();
         const mapDataDocument = yield MapDataModel.findById(mapMetaDataDocument.mapData);
-        const geoJSONZip = yield gridFSToZip(mapDataDocument.geoJSONZipId);
-        const geoJSON = JSON.parse((yield zipToBuffer(geoJSONZip)).toString());
-        const editedGeoJSONZip = yield patchGeoJSON(geoJSON, body.delta);
-        yield zipToGridFSOverwrite(mapDataDocument.geoJSONZipId, editedGeoJSONZip);
+        if (body.delta) {
+            const geoJSONZip = yield gridFSToZip(`geoJSON_${mapDataDocument.geoJSONZipId}.zip`);
+            const geoJSON = JSON.parse((yield zipToBuffer(geoJSONZip)).toString());
+            const editedGeoJSONZip = yield patchGeoJSON(geoJSON, body.delta);
+            yield zipToGridFSOverwrite(mapDataDocument.geoJSONZipId, `geoJSON_${mapDataDocument.geoJSONZipId}.zip`, editedGeoJSONZip);
+        }
         if (body.proprietaryJSON) {
             mapDataDocument.proprietaryJSON = body.proprietaryJSON;
             mapDataDocument.markModified('proprietaryJSON');
             yield mapDataDocument.save();
+        }
+        if (body.layerDelta) {
+            const geoJSONZip = yield gridFSToZip(`geoMan_${mapDataDocument.geoManLayersId}.zip`);
+            const geoJSON = JSON.parse((yield zipToBuffer(geoJSONZip)).toString());
+            const editedGeoJSONZip = yield patchGeoJSON(geoJSON, body.layerDelta);
+            yield zipToGridFSOverwrite(mapDataDocument.geoManLayersId, `geoMan_${mapDataDocument.geoManLayersId}.zip`, editedGeoJSONZip);
         }
         return res.status(200).json({ success: true });
     }
@@ -299,40 +327,6 @@ const saveMapEdits = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         return res.status(500).json({ success: false, errorMessage: "Unable to perform one of the following: read from gridfs, perform patching, write to gridfs: " + err });
     }
 });
-// const publishMap = async (req, res: Response) => {
-//     const body = req.body
-//     if (!body || !body.title || !body.textContent || !body.tags) {
-//         return res.status(400).json({
-//             success: false,
-//             error: 'You must provide title and textContent and tags in body',
-//         })
-//     }
-//     const user = await findUserById(req.userId)
-//     if (!user) {
-//         return res.status(500).json({success: false, errorMessage: "Unable to find user"})
-//     }
-//     const mapId = req.params.id
-//     try {
-//         const mapMetaDataDocument = await MapMetadataModel.findById(mapId)
-//         if(mapMetaDataDocument.owner.toString() !== user._id.toString()) {
-//             return res.status(401).json({success:false, errorMessage:"Unauthorized to create post from this map"})
-//         }
-//         await MapMetadataModel.findByIdAndUpdate(mapId, {isPrivated: false})
-//         const post = await PostModel.create({owner: req.userId, 
-//                                             ownerUserName: user.userName, 
-//                                             title: body.title, 
-//                                             textContent: body.textContent, 
-//                                             mapMetadata: mapId,
-//                                             tags: body.tags})
-//         if (!post) {
-//             return res.status(500).json({ success: false, errorMessage: "Unable to create post"})
-//         }
-//         return res.status(200).json({success:true, postId: post._id})
-//     }
-//     catch (err) {
-//         return res.status(500).json({ success: false, errorMessage: "Unable to create post because " + err})
-//     }
-// }
 const favoriteMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield findUserById(req.userId);
     if (!user) {
@@ -375,7 +369,6 @@ const renameMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         return res.status(500).json({ success: false, errorMessage: "Unable to edit title because " + err });
     }
 });
-// comment for commit
 const deleteMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield findUserById(req.userId);
     if (!user) {
