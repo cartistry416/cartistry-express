@@ -411,7 +411,5 @@ const MapsController = {
     getPublicMapMetadataOwnedByUser,
     getMapData,
     getMapMetadata,
-    getMapProprietaryData
-    //publishMap,
 };
 export { MapsController };

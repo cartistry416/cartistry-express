@@ -18,7 +18,6 @@ mapsRouter.get('/maps/map-metadata', auth.optionalVerify, MapsController.getMapM
 mapsRouter.get('/maps/single-map-metadata/:id', auth.optionalVerify, MapsController.getMapMetadata);
 mapsRouter.get('/maps/public-map-metadata/:userId', MapsController.getPublicMapMetadataOwnedByUser);
 mapsRouter.get('/maps/:id', auth.verify, MapsController.getMapData);
-mapsRouter.get('/maps/:id/props', auth.verify, MapsController.getMapProprietaryData);
 mapsRouter.post('/maps/:id/fork', auth.verify, MapsController.forkMap);
 //mapsRouter.post('/maps/:id/publish', auth.verify, MapsController.publishMap)
 mapsRouter.put('/maps/:id/favorite', auth.verify, MapsController.favoriteMap);
