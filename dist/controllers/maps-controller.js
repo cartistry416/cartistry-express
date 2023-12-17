@@ -204,7 +204,6 @@ const getMapProprietaryData = (req, res) => __awaiter(void 0, void 0, void 0, fu
     if (!mapMetadataDocument) {
         return res.status(404).json({ success: false, errorMessage: "Unable to find mapMetadata" });
     }
-    console.log(req.userId);
     if (mapMetadataDocument.isPrivated) {
         if (!req.userId) { // guest cannot access private map
             return res.status(401).json({ success: false, errorMessage: "Not authorized to get this map data" });

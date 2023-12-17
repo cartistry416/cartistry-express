@@ -92,7 +92,8 @@ const loginUser = async (req, res) => {
                 email: existingUser.email,
                 isAdmin: existingUser.isAdmin,
                 userId: existingUser._id         
-            }
+            },
+            likedPosts: existingUser.likedPosts
         })
 
     } catch (err) {
