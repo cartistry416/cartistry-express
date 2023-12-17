@@ -90,7 +90,8 @@ const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 email: existingUser.email,
                 isAdmin: existingUser.isAdmin,
                 userId: existingUser._id
-            }
+            },
+            likedPosts: existingUser.likedPosts
         });
     }
     catch (err) {

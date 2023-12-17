@@ -236,6 +236,35 @@ const getMapData = async (req, res: Response) => {
     }
 }
 
+const getMapProprietaryData = async (req, res) => {
+    let mapMetadataDocument = null
+    if (!mongoose.isValidObjectId(req.params.id)) {
+        return res.status(400).json({success: false, errorMessage: "Invalid map metadata id: " + req.params.id})
+    }
+    mapMetadataDocument = await MapMetadataModel.findById(req.params.id)
+    if (!mapMetadataDocument) {
+        return res.status(404).json({success:false, errorMessage: "Unable to find mapMetadata"})
+    }
+    if (mapMetadataDocument.isPrivated) {
+        if (!req.userId) { // guest cannot access private map
+            return res.status(401).json({success:false, errorMessage: "Not authorized to get this map data"})
+        }
+        else if (req.userId !== mapMetadataDocument.owner.toString()) { // logged in cannot access
+            return res.status(401).json({success:false, errorMessage: "Not authorized to get this map data"})
+        }
+    }
+    const mapDataDocument = await MapDataModel.findById(mapMetadataDocument.mapData)
+    if(!mapDataDocument) {
+        return res.status(404).json({success:false, errorMessage: "Unable to find map data"})
+    }
+    try {
+        res.status(200).json({success: true, proprietaryJSON: mapDataDocument.proprietaryJSON})
+    }
+    catch (err) {
+        return res.status(500).json({success: false, errorMessage: "Unable to get proprietary JSON"})
+    }
+}
+
 const getMapMetadata = async (req, res) => {
     if (!mongoose.isValidObjectId(req.params.id)) {
         return res.status(400).json({success: false, errorMessage: "Invalid map metadata id: " + req.params.id})
@@ -469,6 +498,7 @@ const MapsController = {
     getPublicMapMetadataOwnedByUser,
     getMapData,
     getMapMetadata,
+    getMapProprietaryData
     //publishMap,
 }
 
