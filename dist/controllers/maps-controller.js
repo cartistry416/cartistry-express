@@ -315,11 +315,12 @@ const saveMapEdits = (req, res) => __awaiter(void 0, void 0, void 0, function* (
             mapDataDocument.markModified('proprietaryJSON');
             yield mapDataDocument.save();
         }
-        if (body.layerDelta) {
-            const geoJSONZip = yield gridFSToZip(`geoMan_${mapDataDocument.geoManLayersId}.zip`);
-            const geoJSON = JSON.parse((yield zipToBuffer(geoJSONZip)).toString());
-            const editedGeoJSONZip = yield patchGeoJSON(geoJSON, body.layerDelta);
-            yield zipToGridFSOverwrite(mapDataDocument.geoManLayersId, `geoMan_${mapDataDocument.geoManLayersId}.zip`, editedGeoJSONZip);
+        if (body.layersGeoJSON) {
+            // const geoJSONZip: Buffer = await gridFSToZip(`geoMan_${mapDataDocument.geoManLayersId}.zip`)
+            // const geoJSON: Object = JSON.parse((await zipToBuffer(geoJSONZip)).toString())
+            // const editedGeoJSONZip: Buffer = await patchGeoJSON(geoJSON, body.layerDelta)    
+            const editedLayersZip = yield bufferToZip(Buffer.from(JSON.stringify(body.layersGeoJSON)));
+            yield zipToGridFSOverwrite(mapDataDocument.geoManLayersId, `geoMan_${mapDataDocument.geoManLayersId}.zip`, editedLayersZip);
         }
         return res.status(200).json({ success: true });
     }

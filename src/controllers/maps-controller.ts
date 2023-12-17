@@ -380,11 +380,12 @@ const saveMapEdits = async (req, res: Response) => {
             await mapDataDocument.save()
         }
 
-        if (body.layerDelta) {
-            const geoJSONZip: Buffer = await gridFSToZip(`geoMan_${mapDataDocument.geoManLayersId}.zip`)
-            const geoJSON: Object = JSON.parse((await zipToBuffer(geoJSONZip)).toString())
-            const editedGeoJSONZip: Buffer = await patchGeoJSON(geoJSON, body.layerDelta)    
-            await zipToGridFSOverwrite(mapDataDocument.geoManLayersId,`geoMan_${mapDataDocument.geoManLayersId}.zip`, editedGeoJSONZip)
+        if (body.layersGeoJSON) {
+            // const geoJSONZip: Buffer = await gridFSToZip(`geoMan_${mapDataDocument.geoManLayersId}.zip`)
+            // const geoJSON: Object = JSON.parse((await zipToBuffer(geoJSONZip)).toString())
+            // const editedGeoJSONZip: Buffer = await patchGeoJSON(geoJSON, body.layerDelta)    
+            const editedLayersZip = await bufferToZip(Buffer.from(JSON.stringify(body.layersGeoJSON)))
+            await zipToGridFSOverwrite(mapDataDocument.geoManLayersId,`geoMan_${mapDataDocument.geoManLayersId}.zip`,  editedLayersZip)
         }
 
         return res.status(200).json({success: true})
