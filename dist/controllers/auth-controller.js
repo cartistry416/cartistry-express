@@ -260,29 +260,17 @@ const requestPasswordToken = (req, res) => __awaiter(void 0, void 0, void 0, fun
             subject: 'Cartistry One Time Token',
             text: `Dear Map Enthusiast,\nHere is your one time reset code: ${token}`
         };
-        const oauth2Client = new OAuth2(process.env.CLIENT_ID, process.env.CLIENT_SECRET, "https://developers.google.com/oauthplayground");
-        oauth2Client.setCredentials({
-            refresh_token: process.env.REFRESH_TOKEN,
-        });
-        const accessToken = yield new Promise((resolve, reject) => {
-            oauth2Client.getAccessToken((err, token) => {
-                if (err) {
-                    console.log("*ERR: ", err);
-                    reject();
-                }
-                resolve(token);
-            });
-        });
         const transporter = nodemailer.createTransport({
-            service: "gmail",
+            host: 'smtp.gmail.com',
+            port: 587,
+            secure: false,
             auth: {
-                type: "OAuth2",
                 user: 'cartistry416@gmail.com',
-                accessToken,
-                clientId: process.env.CLIENT_ID,
-                clientSecret: process.env.CLIENT_SECRET,
-                refreshToken: process.env.REFRESH_TOKEN,
+                pass: process.env.EMAIL_PASS
             },
+            tls: {
+                rejectUnauthorized: false
+            }
         });
         yield transporter.sendMail(mailOptions, (error, info) => {
             if (error) {

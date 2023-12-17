@@ -277,44 +277,25 @@ const requestPasswordToken = async (req, res)=> {
       text: `Dear Map Enthusiast,\nHere is your one time reset code: ${token}`
     };
 
-    const oauth2Client = new OAuth2(
-      process.env.CLIENT_ID,
-      process.env.CLIENT_SECRET,
-      "https://developers.google.com/oauthplayground"
-    );
-
-    oauth2Client.setCredentials({
-      refresh_token: process.env.REFRESH_TOKEN,
-    });
-
-    const accessToken = await new Promise((resolve, reject) => {
-      oauth2Client.getAccessToken((err, token) => {
-        if (err) {
-          console.log("*ERR: ", err)
-          reject();
-        }
-        resolve(token); 
-      });
-    });
-
     const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        type: "OAuth2",
-        user: 'cartistry416@gmail.com',
-        accessToken,
-        clientId: process.env.CLIENT_ID,
-        clientSecret: process.env.CLIENT_SECRET,
-        refreshToken: process.env.REFRESH_TOKEN,
-      },
+      host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: {
+            user: 'cartistry416@gmail.com',
+            pass: process.env.EMAIL_PASS
+        },
+        tls: {
+            rejectUnauthorized: false
+        }
     });
 
     await transporter.sendMail(mailOptions, (error, info) => {  
       if (error) {
         console.log(error);
       } else {
-          console.log("Message sent: %s", info.messageId);
-        }
+        console.log("Message sent: %s", info.messageId);
+      }
     });
 
     return res.status(200).json({success: true, token: token})
