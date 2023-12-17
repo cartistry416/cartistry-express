@@ -299,6 +299,12 @@ const commentOnPost = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             error: 'You must provide a body with textContent',
         });
     }
+    if (!body || !body.ownerId) {
+        return res.status(400).json({
+            success: false,
+            error: 'You must provide a body with ownerId',
+        });
+    }
     let user = yield findUserById(req.userId);
     if (!user) {
         return res.status(500).json({
@@ -309,7 +315,8 @@ const commentOnPost = (req, res) => __awaiter(void 0, void 0, void 0, function* 
     try {
         const comment = yield CommentModel.create({
             ownerUserName: user.userName,
-            textContent: body.textContent
+            textContent: body.textContent,
+            ownerId: body.ownerId
         });
         yield comment.save();
         const post = yield PostModel.findById(req.params.id);

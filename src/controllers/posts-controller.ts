@@ -347,6 +347,13 @@ const commentOnPost = async (req, res) => {
         });
     }
 
+    if (!body || !body.ownerId) {
+        return res.status(400).json({
+            success: false,
+            error: 'You must provide a body with ownerId',
+        });
+    }
+
     let user = await findUserById(req.userId);
     if (!user) {
         return res.status(500).json({
@@ -358,7 +365,8 @@ const commentOnPost = async (req, res) => {
     try {
         const comment = await CommentModel.create({
             ownerUserName: user.userName,
-            textContent: body.textContent
+            textContent: body.textContent,
+            ownerId: body.ownerId
         });
 
         await comment.save();
