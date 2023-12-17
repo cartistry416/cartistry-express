@@ -31,10 +31,10 @@ const uploadMap = async (req, res) => {
         return res.status(400).json({sucess: false, errorMessage: "Body is missing title"})
     }
     const validTemplates: Object = {
-        heat: "heat",
+        choropleth: "choropleth",
         landmark: "landmark",
         cadastral: "cadastral",
-        subway: "subway",
+        gradient: "gradient",
         bin: "bin"
     }
     if (!validTemplates.hasOwnProperty(body.templateType)) {

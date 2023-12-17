@@ -26,10 +26,10 @@ const uploadMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         return res.status(400).json({ sucess: false, errorMessage: "Body is missing title" });
     }
     const validTemplates = {
-        heat: "heat",
+        choropleth: "choropleth",
         landmark: "landmark",
         cadastral: "cadastral",
-        subway: "subway",
+        gradient: "gradient",
         bin: "bin"
     };
     if (!validTemplates.hasOwnProperty(body.templateType)) {
