@@ -66,7 +66,7 @@ const MapFileParserFactory = (fileExtension: string): MapParser | null => {
     else if (fileExtension === "kml") {
         return new KMLFileReader()
     }
-    else if (fileExtension === "shp") {
+    else if (fileExtension === "zip") {
         return new SHPFileReader()
     }
 
