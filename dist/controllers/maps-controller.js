@@ -326,7 +326,11 @@ const saveMapEdits = (req, res) => __awaiter(void 0, void 0, void 0, function* (
             mapDataDocument.gradientLayers = body.gradientLayersGeoJSON;
             yield mapDataDocument.save();
         }
-        console.log(JSON.stringify(mapDataDocument.toObject()));
+        if (body.gradientOptions) {
+            // console.log("received the following gradient options: " + JSON)
+            mapDataDocument.gradientOptions = body.gradientOptions;
+            yield mapDataDocument.save();
+        }
         return res.status(200).json({ success: true });
     }
     catch (err) {

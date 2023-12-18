@@ -393,7 +393,12 @@ const saveMapEdits = async (req, res: Response) => {
             await mapDataDocument.save()
         }
 
-        console.log(JSON.stringify(mapDataDocument.toObject()))
+        if (body.gradientOptions) {
+            // console.log("received the following gradient options: " + JSON)
+            mapDataDocument.gradientOptions = body.gradientOptions
+            await mapDataDocument.save()
+        }
+
 
         return res.status(200).json({success: true})
     }

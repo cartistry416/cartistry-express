@@ -25,7 +25,19 @@ const mapDataSchema = new Schema<MapDataDocument>({
     },
   },
   gradientLayers: {type: Array<Object>, default: []},
-  gradientOptions: {type: Object }
+  gradientOptions:  {type: Object, default: {
+    options: {
+        radius: 25,
+        blur: 15,
+        max: 100,
+        gradient: {
+            33: '#ffffff',
+            67: '#e08300',
+            100: '#e90101',
+        }
+    },
+    intensity: 50
+}}
 });
 
 // Define the MapDataDocument interface to represent a map data document
