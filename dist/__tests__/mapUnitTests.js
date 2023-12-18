@@ -57,7 +57,7 @@ describe('MapsController tests', () => {
             res = yield req.post('/maps-api/maps/upload')
                 .field('fileExtension', 'json')
                 .field('title', 'australia json')
-                .field('templateType', 'heat')
+                .field('templateType', 'choropleth')
                 .attach('zipFile', zipData, 'data.zip').set('Cookie', token);
             expect(res.status).toBe(200);
             expect(res.body.mapMetadata).toBeDefined();

@@ -322,6 +322,11 @@ const saveMapEdits = (req, res) => __awaiter(void 0, void 0, void 0, function* (
             const editedLayersZip = yield bufferToZip(Buffer.from(JSON.stringify(body.layersGeoJSON)));
             yield zipToGridFSOverwrite(mapDataDocument.geoManLayersId, `geoMan_${mapDataDocument.geoManLayersId}.zip`, editedLayersZip);
         }
+        if (body.gradientLayersGeoJSON) {
+            mapDataDocument.gradientLayers = body.gradientLayersGeoJSON;
+            yield mapDataDocument.save();
+        }
+        console.log(JSON.stringify(mapDataDocument.toObject()));
         return res.status(200).json({ success: true });
     }
     catch (err) {

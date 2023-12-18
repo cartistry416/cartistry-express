@@ -24,6 +24,8 @@ const mapDataSchema = new Schema({
             sections: { type: Number, default: 4 },
         },
     },
+    gradientLayers: { type: (Array), default: [] },
+    gradientOptions: { type: Object }
 });
 // Create the MapData model
 const MapDataModel = mongoose.model('MapData', mapDataSchema);

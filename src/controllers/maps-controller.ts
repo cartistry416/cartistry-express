@@ -388,6 +388,13 @@ const saveMapEdits = async (req, res: Response) => {
             await zipToGridFSOverwrite(mapDataDocument.geoManLayersId,`geoMan_${mapDataDocument.geoManLayersId}.zip`,  editedLayersZip)
         }
 
+        if (body.gradientLayersGeoJSON) {
+            mapDataDocument.gradientLayers = body.gradientLayersGeoJSON
+            await mapDataDocument.save()
+        }
+
+        console.log(JSON.stringify(mapDataDocument.toObject()))
+
         return res.status(200).json({success: true})
     }
     catch (err) {

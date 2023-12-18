@@ -17,13 +17,15 @@ const mapDataSchema = new Schema<MapDataDocument>({
         default: []
       }
     },
-    gradientData: {
+    gradientData: { // note: this is actually for choropleth
       primaryColor: { type: Number, default: 0x00FF00},
       minScale: { type: Number, default: 0},
       maxScale: { type: Number, default: 100},
       sections: { type: Number, default: 4},
     },
   },
+  gradientLayers: {type: Array<Object>, default: []},
+  gradientOptions: {type: Object }
 });
 
 // Define the MapDataDocument interface to represent a map data document
@@ -46,6 +48,8 @@ interface MapDataDocument extends Document {
       sections: number;
     };
   };
+  gradientLayers: Array<Object>
+  gradientOptions: Object
 }
 
 // Create the MapData model
