@@ -96,8 +96,11 @@ const forkMap = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         cloneMapData._id = mongoose.Types.ObjectId();
         cloneMapMetaData.mapData = cloneMapData._id;
         const cloneGeoJSONZipId = mongoose.Types.ObjectId().toString();
+        const cloneGeoManLayersId = mongoose.Types.ObjectId().toString();
         cloneMapData.geoJSONZipId = cloneGeoJSONZipId;
+        cloneMapData.geoManLayersId = cloneGeoManLayersId;
         yield zipToGridFS(cloneGeoJSONZipId, `geoJSON_${cloneGeoJSONZipId}.zip`, geoJSONZip);
+        yield zipToGridFS(cloneGeoManLayersId, `geoMan_${cloneGeoManLayersId}.zip`, geoJSONZip);
         cloneMapMetaData.createdAt = new Date();
         cloneMapMetaData.updatedAt = new Date();
         cloneMapData.isNew = true;

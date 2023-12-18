@@ -117,11 +117,13 @@ const forkMap = async (req, res) => {
         cloneMapData._id = mongoose.Types.ObjectId()
         cloneMapMetaData.mapData = cloneMapData._id
 
-
         const cloneGeoJSONZipId = mongoose.Types.ObjectId().toString()
+        const cloneGeoManLayersId = mongoose.Types.ObjectId().toString()
         cloneMapData.geoJSONZipId = cloneGeoJSONZipId
+        cloneMapData.geoManLayersId = cloneGeoManLayersId
         await zipToGridFS(cloneGeoJSONZipId, `geoJSON_${cloneGeoJSONZipId}.zip`, geoJSONZip)
-    
+        await zipToGridFS(cloneGeoManLayersId,`geoMan_${cloneGeoManLayersId}.zip`, geoJSONZip) 
+
         cloneMapMetaData.createdAt =  new Date()
         cloneMapMetaData.updatedAt =  new Date()
 
