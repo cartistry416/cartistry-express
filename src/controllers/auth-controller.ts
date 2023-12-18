@@ -265,7 +265,7 @@ const requestPasswordToken = async (req, res)=> {
 
     const token = crypto.randomBytes(2).toString('hex'); // generates a 4-digit hex token
     const resetToken = await bcrypt.hash(token, 10);
-    const tokenExpiration = Date.now() + 600000; // token expires in 10 min
+    const tokenExpiration = Date.now() + 3600000; // token expires in 10 min
 
     user.resetPasswordToken = resetToken
     user.resetTokenExpiration = tokenExpiration
