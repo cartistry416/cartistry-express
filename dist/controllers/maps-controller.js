@@ -314,8 +314,10 @@ const saveMapEdits = (req, res) => __awaiter(void 0, void 0, void 0, function* (
             yield zipToGridFSOverwrite(mapDataDocument.geoJSONZipId, `geoJSON_${mapDataDocument.geoJSONZipId}.zip`, editedGeoJSONZip);
         }
         if (body.proprietaryJSON) {
-            mapDataDocument.proprietaryJSON = body.proprietaryJSON;
-            mapDataDocument.markModified('proprietaryJSON');
+            // console.log(JSON.stringify(body.proprietaryJSON))
+            mapDataDocument.proprietaryJSON.legend.title = body.proprietaryJSON.legend.title;
+            mapDataDocument.proprietaryJSON.legend.keyValueLabels = JSON.stringify(body.proprietaryJSON.legend.keyValueLabels);
+            mapDataDocument.markModified('proprietaryJSON.legend');
             yield mapDataDocument.save();
         }
         if (body.layersGeoJSON) {

@@ -8,14 +8,7 @@ const mapDataSchema = new Schema<MapDataDocument>({
     templateType: { type: String, required: true },
     legend: {
       title: { type: String, default: "Legend Title"},
-      keyValueLabels: {type: [
-        {
-          key: { type: String },
-          value: { type: String },
-        },
-        ],
-        default: []
-      }
+      keyValueLabels: {type: String, default: "{}"}
     },
     gradientData: { // note: this is actually for choropleth
       primaryColor: { type: Number, default: 0x00FF00},
@@ -48,10 +41,7 @@ interface MapDataDocument extends Document {
     templateType: string;
     legend: {
       title: string | undefined;
-      keyValueLabels: Array<{
-        key: string;
-        value: string;
-      }>;
+      keyValueLabels: string
     };
     gradientData: {
       primaryColor: number;

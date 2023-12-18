@@ -8,14 +8,7 @@ const mapDataSchema = new Schema({
         templateType: { type: String, required: true },
         legend: {
             title: { type: String, default: "Legend Title" },
-            keyValueLabels: { type: [
-                    {
-                        key: { type: String },
-                        value: { type: String },
-                    },
-                ],
-                default: []
-            }
+            keyValueLabels: { type: String, default: "{}" }
         },
         gradientData: {
             primaryColor: { type: Number, default: 0x00FF00 },
