@@ -30,7 +30,14 @@ const mapDataSchema = new Schema<MapDataDocument>({
         }
     },
     intensity: 50
-}}
+  }},
+  choroplethLayers: {type: Array<Object>, default: []},
+  choroplethOptions:  {type: Object, default: {
+    options: {
+      numChoroplethSections: 10,
+      choroplethColors: ["#ffffff", "#e08300", "#e90101"]
+    }
+  }},
 });
 
 // Define the MapDataDocument interface to represent a map data document
@@ -52,6 +59,8 @@ interface MapDataDocument extends Document {
   };
   gradientLayers: Array<Object>
   gradientOptions: Object
+  choroplethLayers: Array<Object>
+  choroplethOptions: Object
 }
 
 // Create the MapData model
